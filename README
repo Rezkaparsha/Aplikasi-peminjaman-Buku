@@ -1,0 +1,192 @@
+KONSEP APLIKASI PEMINJAMAN BUKU
+
+1. Tujuan Program
+
+Aplikasi Peminjaman Buku dibuat untuk memudahkan siswa dalam mencari dan melakukan peminjaman buku serta membantu admin perpustakaan dalam mengelola data buku, data siswa, transaksi peminjaman, pengembalian buku, dan denda.
+
+Aplikasi ini dirancang agar proses peminjaman dan pengembalian buku menjadi lebih terorganisir, cepat, dan mudah untuk dipantau.
+
+
+2. Ruang Lingkup
+
+Aplikasi ini mencakup:
+
+**Halaman Daftar Buku: Menampilkan daftar buku yang tersedia di perpustakaan.
+**Halaman Detail Buku: Menampilkan informasi detail buku seperti judul, penulis, penerbit, genre, dan stok.
+**Halaman Peminjaman: Digunakan siswa untuk melakukan peminjaman buku.
+**Halaman Pengembalian: Digunakan untuk melihat dan melakukan proses pengembalian buku.
+**Halaman Transaksi: Digunakan admin untuk mengelola transaksi peminjaman dan pengembalian.
+**Halaman Denda: Digunakan untuk mencatat dan mengelola denda apabila buku terlambat dikembalikan.
+**Halaman Histori:Menampilkan riwayat peminjaman dan pengembalian buku.
+
+
+3. Pengguna Aplikasi
+
+ A. Siswa
+
+Siswa dapat:
+
+* Login ke dalam aplikasi.
+* Melihat daftar buku.
+* Melihat detail buku.
+* Mencari buku berdasarkan judul, penulis, atau genre.
+* Melakukan peminjaman buku.
+* Melihat status peminjaman.
+* Melihat riwayat peminjaman.
+* Melakukan pengembalian buku.
+* Melihat informasi denda apabila terlambat mengembalikan buku.
+
+B. Admin
+
+Admin dapat:
+
+* Login ke dalam aplikasi.
+* Mengelola data buku (CRUD).
+* Mengelola data siswa (CRUD).
+* Mengelola data admin.
+* Melihat dan mengelola transaksi peminjaman.
+* Memproses pengembalian buku.
+* Menentukan atau mengelola denda keterlambatan.
+* Melihat riwayat transaksi peminjaman dan pengembalian.
+* Memantau stok buku.
+
+---
+
+4. Alur Kerja Aplikasi
+
+A. Alur Siswa
+
+1. Siswa melakukan login menggunakan username dan password.
+2. Setelah berhasil login, siswa masuk ke dashboard.
+3. Siswa memilih menu **Daftar Buku**.
+4. Siswa mencari dan memilih buku yang ingin dipinjam.
+5. Siswa melihat detail dan ketersediaan stok buku.
+6. Siswa melakukan peminjaman buku.
+7. Sistem mencatat transaksi peminjaman dan mengurangi stok buku.
+8. Siswa dapat melihat status peminjamannya.
+9. Setelah selesai menggunakan buku, siswa melakukan proses pengembalian.
+10. Sistem memeriksa tanggal pengembalian.
+11. Jika terlambat, sistem memberikan informasi denda.
+12. Setelah buku dikembalikan, stok buku diperbarui dan transaksi dicatat dalam histori.
+
+B. Alur Admin
+
+1. Admin melakukan login menggunakan username dan password.
+2. Setelah berhasil login, admin masuk ke dashboard admin.
+3. Admin dapat memilih menu:
+
+   * Kelola Buku
+   * Kelola Siswa
+   * Transaksi Peminjaman
+   * Pengembalian
+   * Denda
+   * Histori
+   * Kelola Admin
+4. Admin dapat melakukan CRUD terhadap data buku.
+5. Admin dapat melakukan CRUD terhadap data siswa.
+6. Admin melihat transaksi peminjaman yang dilakukan siswa.
+7. Admin memproses pengembalian buku.
+8. Sistem menghitung atau menentukan denda apabila buku terlambat dikembalikan.
+9. Admin mengelola status denda.
+10. Sistem memperbarui stok buku setelah buku dikembalikan.
+11. Admin dapat melihat histori transaksi.
+
+
+5. Fitur Utama
+
+A. Autentikasi
+
+* Login admin dan siswa menggunakan username dan password.
+* Register siswa.
+* Logout.
+* Session management.
+* Pembatasan hak akses berdasarkan role pengguna.
+
+B. Manajemen Buku
+
+Admin dapat:
+
+* Menambahkan data buku.
+* Mengubah data buku.
+* Menghapus data buku.
+* Melihat daftar buku.
+* Menambahkan genre buku.
+* Mengelola stok buku.
+* Melihat informasi buku.
+
+Siswa dapat:
+
+* Melihat daftar buku.
+* Mencari buku.
+* Melihat detail buku.
+* Melihat ketersediaan stok buku.
+
+C. Manajemen Peminjaman
+
+* Siswa dapat melakukan peminjaman buku.
+* Sistem mencatat tanggal peminjaman.
+* Sistem mencatat batas waktu pengembalian.
+* Sistem mengurangi stok buku ketika buku dipinjam.
+* Sistem memperbarui status peminjaman.
+* Siswa dapat melihat status peminjaman.
+* Admin dapat melihat transaksi peminjaman.
+
+D. Manajemen Pengembalian
+
+* Siswa dapat mengajukan proses pengembalian buku.
+* Admin dapat memproses pengembalian.
+* Sistem mencatat tanggal pengembalian.
+* Sistem memeriksa keterlambatan pengembalian.
+* Sistem memperbarui status transaksi.
+* Sistem menambahkan kembali stok buku setelah buku dikembalikan.
+
+E. Manajemen Denda
+
+* Sistem mencatat keterlambatan pengembalian.
+* Sistem menentukan jumlah denda berdasarkan aturan yang ditetapkan.
+* Admin dapat melihat data denda.
+* Admin dapat mengubah status denda.
+* Siswa dapat melihat informasi denda yang dimiliki.
+
+F. Histori Transaksi
+
+* Mencatat riwayat peminjaman.
+* Mencatat riwayat pengembalian.
+* Menampilkan buku yang pernah dipinjam siswa.
+* Menampilkan tanggal peminjaman dan pengembalian.
+* Menampilkan status transaksi.
+* Menampilkan informasi denda apabila terdapat keterlambatan.
+
+G. Manajemen Siswa
+
+Admin dapat:
+
+* Menambahkan siswa.
+* Mengubah data siswa.
+* Menghapus siswa.
+* Melihat daftar siswa.
+* Melihat informasi siswa.
+
+H. Manajemen Admin
+
+Admin dapat:
+
+* Menambahkan admin baru.
+* Mengubah data admin.
+* Menghapus admin.
+* Melihat daftar admin.
+
+
+6. Aturan Dasar Sistem
+
+Agar sistem peminjaman berjalan dengan baik, aplikasi memiliki beberapa aturan:
+
+1. Siswa harus login sebelum melakukan peminjaman.
+2. Siswa hanya dapat meminjam buku yang stoknya masih tersedia.
+3. Setiap transaksi memiliki tanggal peminjaman dan batas pengembalian.
+4. Stok buku berkurang ketika peminjaman berhasil.
+5. Stok buku bertambah kembali ketika buku telah dikembalikan.
+6. Buku yang terlambat dikembalikan akan mendapatkan denda sesuai aturan yang ditentukan.
+7. Data transaksi peminjaman tidak boleh dihapus sembarangan karena merupakan histori transaksi.
+8. Admin memiliki hak akses untuk mengelola data dan transaksi.
+9. Siswa hanya dapat mengelola aktivitas peminjamannya sendiri.
