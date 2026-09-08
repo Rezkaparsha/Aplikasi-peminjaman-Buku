@@ -9,7 +9,7 @@ $daftarBuku = $bukuModel->getAllBuku();
 <head>
     <meta charset="UTF-8">
     <title>Daftar Buku - Perpustakaan Online</title>
-</head>
+</head>''
 <body>
 
     <h2>Kelola Koleksi Buku</h2>

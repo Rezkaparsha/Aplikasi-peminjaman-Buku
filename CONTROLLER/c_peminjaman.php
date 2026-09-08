@@ -1,140 +1,266 @@
-=<?php
+<?php
 
+session_start();
+
+require_once __DIR__ . "/../MODEL/m_koneksi.php";
 require_once __DIR__ . "/../MODEL/m_peminjaman.php";
 
-$peminjamanModel = new Peminjaman();
+// CEK LOGIN
+if (!isset($_SESSION['id_user'])) {
+    header("Location: ../VIEW/login.php");
+    exit;
+}
+
+// BUAT KONEKSI DATABASE
+$db = new koneksi();
+$koneksi = $db->getkoneksi();
+
+// BUAT OBJECT MODEL PEMINJAMAN
+$model = new M_Peminjaman($koneksi);
+
+// AMBIL AKSI
 $aksi = $_GET['aksi'] ?? '';
 
-if ($aksi === 'daftar') {
-    $dataPeminjaman = $peminjamanModel->getAll();
+// SISWA
+// 1. SISWA MENGAJUKAN PEMINJAMAN
+if ($aksi === 'tambah') {
 
-    require_once __DIR__ . "/../VIEW/ADMIN/daftarPeminjaman.php";
-    exit;
-}
-
-if ($aksi === 'detail') {
-    $idPeminjaman = (int)($_GET['id_peminjaman'] ?? 0);
-
-    if ($idPeminjaman <= 0) {
-        header("Location: ../VIEW/ADMIN/daftarPeminjaman.php");
-        exit;
-    }
-
-    $dataPeminjaman = $peminjamanModel->getById($idPeminjaman);
-    $dataDetail = $peminjamanModel->getDetail($idPeminjaman);
-
-    if (!$dataPeminjaman) {
-        echo "Data peminjaman tidak ditemukan.";
-        exit;
-    }
-
-    require_once __DIR__ . "/../VIEW/ADMIN/detailPeminjaman.php";
-    exit;
-}
-
-if ($aksi === 'ajukan') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: ../VIEW/SISWA/daftarBuku.php");
         exit;
     }
 
-    $idUser = (int)($_POST['id_user'] ?? 0);
-    $idBuku = (int)($_POST['id_buku'] ?? 0);
-    $tanggalPengembalian = $_POST['tanggal_pengembalian'] ?? '';
+    $id_user = $_SESSION['id_user'];
+    $id_buku = $_POST['id_buku'] ?? [];
+    $jumlah = $_POST['jumlah'] ?? [];
+    $daftarBuku = [];
 
+    // BENTUK DATA BUKU
+    if (is_array($id_buku) && is_array($jumlah)) {
+        foreach ($id_buku as $index => $id) {
+            if (!isset($jumlah[$index])) {
+                continue;
+            }
+
+            $daftarBuku[] = [
+                'id_buku' => (int) $id,
+                'jumlah' => (int) $jumlah[$index]
+            ];
+        }
+    }
+
+    // SIMPAN PEMINJAMAN
+    $hasil = $model->tambahPeminjaman(
+        $id_user,
+        $daftarBuku
+    );
+
+    // HASIL
+    if ($hasil['status']) {
+        header(
+            "Location: ../VIEW/SISWA/detailPeminjaman.php?id_peminjaman="
+            . $hasil['id_peminjaman']
+        );
+        exit;
+    } else {
+        $_SESSION['error'] = $hasil['pesan'];
+        header(
+            "Location: ../VIEW/SISWA/daftarBuku.php"
+        );
+        exit;
+    }
+}
+
+// 2. LIHAT DETAIL PEMINJAMAN SISWA
+if ($aksi === 'detail') {
+
+    $id_peminjaman = isset($_GET['id_peminjaman'])
+        ? (int) $_GET['id_peminjaman']
+        : 0;
+
+    if ($id_peminjaman <= 0) {
+        header("Location: ../VIEW/SISWA/peminjaman.php");
+        exit;
+    }
+
+    $id_user = $_SESSION['id_user'];
+
+    // Pastikan peminjaman milik siswa
     if (
-        $idUser <= 0 ||
-        $idBuku <= 0 ||
-        $tanggalPengembalian === ''
+        !$model->cekKepemilikanPeminjaman(
+            $id_peminjaman,
+            $id_user
+        )
     ) {
-        echo "Data peminjaman tidak lengkap.";
+        $_SESSION['error'] =
+            'Anda tidak memiliki akses ke peminjaman ini.';
+
+        header(
+            "Location: ../VIEW/SISWA/peminjaman.php"
+        );
         exit;
     }
 
-    $tanggalPinjam = date('Y-m-d');
+    $dataPeminjaman =
+        $model->getPeminjamanById(
+            $id_peminjaman
+        );
 
-    $idPeminjaman = $peminjamanModel->insertPeminjaman(
-        $idUser,
-        $tanggalPinjam
-    );
+    $detailPeminjaman =
+        $model->getDetailPeminjaman(
+            $id_peminjaman
+        );
 
-    if (!$idPeminjaman) {
-        echo "Gagal membuat peminjaman.";
-        exit;
-    }
+    require_once __DIR__ .
+        "/../VIEW/SISWA/detailPeminjaman.php";
 
-    $hasilDetail = $peminjamanModel->insertDetail(
-        $idPeminjaman,
-        $idBuku,
-        $tanggalPengembalian
-    );
-
-    if (!$hasilDetail) {
-        echo "Gagal menyimpan detail peminjaman.";
-        exit;
-    }
-
-    header("Location: ../VIEW/SISWA/peminjamanSaya.php");
     exit;
 }
 
+// CEK ROLE ADMIN
+if (
+    !isset($_SESSION['role']) ||
+    $_SESSION['role'] !== 'admin'
+) {
+    header("Location: ../VIEW/SISWA/peminjaman.php");
+    exit;
+}
+
+// 3. ADMIN MELIHAT SEMUA PEMINJAMAN
+if ($aksi === 'admin') {
+
+    $dataPeminjaman =
+        $model->getSemuaPeminjaman();
+
+    require_once __DIR__ .
+        "/../VIEW/ADMIN/daftarPeminjaman.php";
+
+    exit;
+}
+
+// 4. ADMIN MELIHAT DETAIL
+if ($aksi === 'detailAdmin') {
+
+    $id_peminjaman = isset($_GET['id_peminjaman'])
+        ? (int) $_GET['id_peminjaman']
+        : 0;
+
+    if ($id_peminjaman <= 0) {
+        header(
+            "Location: ../VIEW/ADMIN/daftarPeminjaman.php"
+        );
+        exit;
+    }
+
+    $dataPeminjaman =
+        $model->getPeminjamanById(
+            $id_peminjaman
+        );
+
+    $detailPeminjaman =
+        $model->getDetailPeminjaman(
+            $id_peminjaman
+        );
+
+    if (!$dataPeminjaman) {
+        $_SESSION['error'] =
+            'Data peminjaman tidak ditemukan.';
+
+        header(
+            "Location: ../VIEW/ADMIN/daftarPeminjaman.php"
+        );
+        exit;
+    }
+
+    require_once __DIR__ .
+        "/../VIEW/ADMIN/detailPeminjaman.php";
+
+    exit;
+}
+
+// 5. ADMIN MENYETUJUI PEMINJAMAN
 if ($aksi === 'setujui') {
-    $idPeminjaman = (int)($_GET['id_peminjaman'] ?? 0);
 
-    if ($idPeminjaman <= 0) {
-        header("Location: ../VIEW/ADMIN/daftarPeminjaman.php");
+    $id_peminjaman = isset($_POST['id_peminjaman'])
+        ? (int) $_POST['id_peminjaman']
+        : 0;
+
+    $tanggal_pengembalian =
+        $_POST['tanggal_pengembalian'] ?? '';
+
+    if ($id_peminjaman <= 0) {
+        $_SESSION['error'] =
+            'ID peminjaman tidak valid.';
+
+        header(
+            "Location: ../VIEW/ADMIN/daftarPeminjaman.php"
+        );
         exit;
     }
 
-    $dataPeminjaman = $peminjamanModel->getById($idPeminjaman);
+    $hasil =
+        $model->setujuiPeminjaman(
+            $id_peminjaman,
+            $tanggal_pengembalian
+        );
 
-    if (!$dataPeminjaman) {
-        echo "Data peminjaman tidak ditemukan.";
-        exit;
+    if ($hasil['status']) {
+        $_SESSION['success'] =
+            $hasil['pesan'];
+    } else {
+        $_SESSION['error'] =
+            $hasil['pesan'];
     }
 
-    if ($dataPeminjaman['status'] !== 'Diajukan') {
-        echo "Peminjaman ini sudah diproses.";
-        exit;
-    }
+    header(
+        "Location: ../VIEW/ADMIN/detailPeminjaman.php?id_peminjaman="
+        . $id_peminjaman
+    );
 
-    if ($peminjamanModel->updateStatus($idPeminjaman, 'Dipinjam')) {
-        header("Location: ../VIEW/ADMIN/daftarPeminjaman.php");
-        exit;
-    }
-
-    echo "Gagal menyetujui peminjaman.";
     exit;
 }
 
+// 6. ADMIN MENOLAK PEMINJAMAN
 if ($aksi === 'tolak') {
-    $idPeminjaman = (int)($_GET['id_peminjaman'] ?? 0);
 
-    if ($idPeminjaman <= 0) {
-        header("Location: ../VIEW/ADMIN/daftarPeminjaman.php");
+    $id_peminjaman = isset($_POST['id_peminjaman'])
+        ? (int) $_POST['id_peminjaman']
+        : 0;
+
+    if ($id_peminjaman <= 0) {
+        $_SESSION['error'] =
+            'ID peminjaman tidak valid.';
+
+        header(
+            "Location: ../VIEW/ADMIN/daftarPeminjaman.php"
+        );
         exit;
     }
 
-    $dataPeminjaman = $peminjamanModel->getById($idPeminjaman);
+    $hasil =
+        $model->tolakPeminjaman(
+            $id_peminjaman
+        );
 
-    if (!$dataPeminjaman) {
-        echo "Data peminjaman tidak ditemukan.";
-        exit;
+    if ($hasil['status']) {
+        $_SESSION['success'] =
+            $hasil['pesan'];
+    } else {
+        $_SESSION['error'] =
+            $hasil['pesan'];
     }
 
-    if ($dataPeminjaman['status'] !== 'Diajukan') {
-        echo "Peminjaman ini sudah diproses.";
-        exit;
-    }
+    header(
+        "Location: ../VIEW/ADMIN/detailPeminjaman.php?id_peminjaman="
+        . $id_peminjaman
+    );
 
-    if ($peminjamanModel->updateStatus($idPeminjaman, 'Ditolak')) {
-        header("Location: ../VIEW/ADMIN/daftarPeminjaman.php");
-        exit;
-    }
-
-    echo "Gagal menolak peminjaman.";
     exit;
 }
 
-header("Location: ../VIEW/ADMIN/daftarPeminjaman.php");
+// AKSI TIDAK DITEMUKAN
+header(
+    "Location: ../VIEW/SISWA/peminjaman.php"
+);
+
 exit;
