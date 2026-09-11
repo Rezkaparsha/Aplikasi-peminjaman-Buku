@@ -21,7 +21,7 @@ $daftarBuku = $bukuModel->getAllBuku();
     <table border="1" cellspacing="0" cellpadding="8">
         <thead>
             <tr>
-                <th>No</th>
+                <th>No.</th>
                 <th>Cover</th>
                 <th>Judul Buku</th>
                 <th>Penulis</th>
