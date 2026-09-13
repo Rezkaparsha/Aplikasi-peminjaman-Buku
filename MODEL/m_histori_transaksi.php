@@ -34,9 +34,9 @@ class HistoriTransaksi
         $this->koneksi = $db->getKoneksi();
     }
 
-    // =====================================================
+
     // MENAMPILKAN SEMUA HISTORI
-    // =====================================================
+
     public function getAll()
     {
         $query = "
@@ -56,9 +56,9 @@ class HistoriTransaksi
         return $data;
     }
 
-    // =====================================================
+
     // MENCARI HISTORI BERDASARKAN ID
-    // =====================================================
+
     public function getById($id_histori)
     {
         $stmt = $this->koneksi->prepare("
@@ -77,9 +77,9 @@ class HistoriTransaksi
         return $stmt->get_result()->fetch_assoc();
     }
 
-    // =====================================================
+
     // HISTORI BERDASARKAN USER
-    // =====================================================
+
     public function getByUser($nis)
     {
         $stmt = $this->koneksi->prepare("
@@ -107,9 +107,9 @@ class HistoriTransaksi
         return $data;
     }
 
-    // =====================================================
+
     // HISTORI BERDASARKAN PEMINJAMAN
-    // =====================================================
+
     public function getByPeminjaman($id_peminjaman)
     {
         $stmt = $this->koneksi->prepare("
@@ -137,9 +137,9 @@ class HistoriTransaksi
         return $data;
     }
 
-    // =====================================================
+
     // TAMBAH HISTORI
-    // =====================================================
+
     public function insert()
     {
         $stmt = $this->koneksi->prepare("
@@ -182,9 +182,9 @@ class HistoriTransaksi
         return $stmt->execute();
     }
 
-    // =====================================================
+
     // MENGHAPUS HISTORI
-    // =====================================================
+
     public function delete($id_histori)
     {
         $stmt = $this->koneksi->prepare("
@@ -200,9 +200,9 @@ class HistoriTransaksi
         return $stmt->execute();
     }
 
-    // =====================================================
+
     // PENCARIAN HISTORI
-    // =====================================================
+
     public function search($keyword)
     {
         $keyword = "%" . $keyword . "%";
@@ -238,49 +238,4 @@ class HistoriTransaksi
         return $data;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-// require_once "m_koneksi.php";
-
-// class m_histori{
-//     private $koneksi;
-
-//     public $id_histori;
-//     public $id_peminjaman;
-//     public $id_detail;
-//     public $nis;
-//     public $nama_siswa;
-//     public $id_buku;
-//     public $judul_buku;
-//     public $harga_buku;
-//     public $tanggal_pinjam;
-//     public $tanggal_pengembaliaan; 
-//     public $tanggal_dikembalikan;
-//     public $jenis_denda;
-//     public $denda;
-//     public $tanggal_selesai; 
-
-
-//     public function __construct()
-//     {
-//         $dbname = new koneksi();
-//         $this->koneksi = $dbname->getkoneksi();
-//     }
-
-    
-// }
-
-
-
 ?>

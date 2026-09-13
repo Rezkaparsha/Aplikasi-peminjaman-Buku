@@ -1,4 +1,8 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . "/../MODEL/m_users.php";
 
 class UserController
@@ -62,6 +66,7 @@ class UserController
     }
 }
 
+
 // =============================================================
 // HANDLER REQUEST
 // =============================================================
@@ -77,7 +82,7 @@ if (isset($_GET['aksi'])) {
                 $_POST['password'],
                 $_POST['role']
             );
-            header("Location: ../VIEW/ADMIN/daftarUser.php");
+            header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
             exit;
 
         case 'edit':
@@ -95,21 +100,70 @@ if (isset($_GET['aksi'])) {
                 $_POST['username'],
                 $_POST['role']
             );
-            header("Location: ../VIEW/ADMIN/daftarUser.php");
+            header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
             exit;
 
         case 'updatePassword':
-            $controller->updatePassword(
-                (int) $_POST['id_user'],
-                $_POST['password']
-            );
-            header("Location: ../VIEW/ADMIN/daftarUser.php");
+            // 1. Cek Sesi User
+            if (!isset($_SESSION['id_user'])) {
+                header("Location: /Aplikasi Peminjaman Buku/VIEW/AUTH/login.php");
+                exit;
+            }
+
+            // Aksi Update Password oleh Admin via Form Admin (jika ada input id_user di POST)
+            if (isset($_POST['id_user']) && !empty($_POST['id_user'])) {
+                $controller->updatePassword(
+                    (int) $_POST['id_user'],
+                    $_POST['password']
+                );
+                $_SESSION['success'] = "Password user berhasil diperbarui!";
+                header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
+                exit;
+            }
+
+            // Aksi Update Password Mandiri oleh Siswa via Halaman Profil
+            $id_user = (int) $_SESSION['id_user'];
+            $password_lama = $_POST['password_lama'] ?? '';
+            $password_baru = $_POST['password_baru'] ?? '';
+            $konfirmasi    = $_POST['konfirmasi_password_baru'] ?? '';
+
+            // Validasi Input
+            if (empty($password_lama) || empty($password_baru) || empty($konfirmasi)) {
+                $_SESSION['error'] = "Semua bidang password wajib diisi!";
+                header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/profil.php");
+                exit;
+            }
+
+            if ($password_baru !== $konfirmasi) {
+                $_SESSION['error'] = "Konfirmasi password baru tidak cocok!";
+                header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/profil.php");
+                exit;
+            }
+
+            // Verifikasi Password Lama
+            $userCurrent = $controller->detail($id_user);
+            if (!$userCurrent || !password_verify($password_lama, $userCurrent['password'])) {
+                $_SESSION['error'] = "Password saat ini (lama) tidak sesuai!";
+                header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/profil.php");
+                exit;
+            }
+
+            // Eksekusi Update Password
+            $hasil = $controller->updatePassword($id_user, $password_baru);
+
+            if ($hasil) {
+                $_SESSION['success'] = "Password Anda berhasil diperbarui!";
+            } else {
+                $_SESSION['error'] = "Gagal memperbarui password. Silakan coba lagi.";
+            }
+
+            header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/profil.php");
             exit;
 
         case 'hapus':
             $id_user = (int) $_GET['id_user'];
             $controller->hapus($id_user);
-            header("Location: ../VIEW/ADMIN/daftarUser.php");
+            header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
             exit;
     }
 }

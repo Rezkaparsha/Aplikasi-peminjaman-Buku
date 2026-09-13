@@ -21,59 +21,65 @@ class Buku
         $this->koneksi = $db->getKoneksi();
     }
 
+
     // GET SEMUA BUKU
+
     public function getAllBuku()
     {
         $query = "
             SELECT
-                buku.id_buku,
-                buku.id_kategori,
-                buku.id_penerbit,
-                buku.judul_buku,
-                buku.tahun_terbit,
-                buku.harga_buku,
-                buku.stok,
-                buku.cover,
+                b.id_buku,
+                b.id_kategori,
+                b.id_penerbit,
+                b.judul_buku,
+                b.tahun_terbit,
+                b.harga_buku,
+                b.stok,
+                b.cover,
 
-                kategori.nama_kategori,
-                penerbit.nama_penerbit,
+                k.nama_kategori,
+                p.nama_penerbit,
 
-                GROUP_CONCAT(
-                    DISTINCT penulis.nama_penulis
-                    ORDER BY penulis.nama_penulis ASC
-                    SEPARATOR ', '
+                COALESCE(
+                    GROUP_CONCAT(
+                        DISTINCT pen.nama_penulis
+                        ORDER BY pen.nama_penulis ASC
+                        SEPARATOR ', '
+                    ),
+                    '-'
                 ) AS penulis
 
-            FROM buku
+            FROM buku b
 
-            LEFT JOIN kategori
-                ON buku.id_kategori = kategori.id_kategori
+            LEFT JOIN kategori k
+                ON b.id_kategori = k.id_kategori
 
-            LEFT JOIN penerbit
-                ON buku.id_penerbit = penerbit.id_penerbit
+            LEFT JOIN penerbit p
+                ON b.id_penerbit = p.id_penerbit
 
-            LEFT JOIN buku_penulis
-                ON buku.id_buku = buku_penulis.id_buku
+            LEFT JOIN buku_penulis bp
+                ON b.id_buku = bp.id_buku
 
-            LEFT JOIN penulis
-                ON buku_penulis.id_penulis = penulis.id_penulis
+            LEFT JOIN penulis pen
+                ON bp.id_penulis = pen.id_penulis
 
             GROUP BY
-                buku.id_buku,
-                buku.id_kategori,
-                buku.id_penerbit,
-                buku.judul_buku,
-                buku.tahun_terbit,
-                buku.harga_buku,
-                buku.stok,
-                buku.cover,
-                kategori.nama_kategori,
-                penerbit.nama_penerbit
+                b.id_buku,
+                b.id_kategori,
+                b.id_penerbit,
+                b.judul_buku,
+                b.tahun_terbit,
+                b.harga_buku,
+                b.stok,
+                b.cover,
+                k.nama_kategori,
+                p.nama_penerbit
 
-            ORDER BY buku.id_buku DESC
+            ORDER BY b.id_buku DESC
         ";
 
         $result = $this->koneksi->query($query);
+
         $data = [];
 
         if ($result) {
@@ -85,7 +91,9 @@ class Buku
         return $data;
     }
 
+
     // GET BUKU BERDASARKAN ID
+
     public function getBukuById($id_buku)
     {
         $stmt = $this->koneksi->prepare("
@@ -106,18 +114,23 @@ class Buku
             return null;
         }
 
+        $id_buku = (int) $id_buku;
+
         $stmt->bind_param("i", $id_buku);
         $stmt->execute();
 
         $result = $stmt->get_result();
+
         $data = $result->fetch_assoc();
 
         $stmt->close();
 
-        return $data;
+        return $data ?: null;
     }
 
+
     // TAMBAH BUKU
+
     public function insert()
     {
         $stmt = $this->koneksi->prepare("
@@ -160,7 +173,9 @@ class Buku
         return $hasil;
     }
 
+
     // UPDATE BUKU
+
     public function update()
     {
         $stmt = $this->koneksi->prepare("
@@ -193,12 +208,15 @@ class Buku
         );
 
         $hasil = $stmt->execute();
+
         $stmt->close();
 
         return $hasil;
     }
 
+
     // HAPUS BUKU
+
     public function delete($id_buku)
     {
         $stmt = $this->koneksi->prepare("
@@ -210,12 +228,14 @@ class Buku
             return false;
         }
 
+        $id_buku = (int) $id_buku;
+
         $stmt->bind_param("i", $id_buku);
 
         $hasil = $stmt->execute();
+
         $stmt->close();
 
         return $hasil;
     }
 }
-?>

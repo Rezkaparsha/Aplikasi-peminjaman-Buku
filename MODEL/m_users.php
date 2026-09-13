@@ -78,7 +78,7 @@ class Users
     {
         $stmt = $this->koneksi->prepare(
             "INSERT INTO users
-            (nis, nama_lengkap, username, password, role)
+            (nis_nip, nama_lengkap, username, password, role)
             VALUES (?, ?, ?, ?, ?)"
         );
 
@@ -99,7 +99,7 @@ class Users
     {
         $stmt = $this->koneksi->prepare(
             "UPDATE users SET
-                nis = ?,
+                nis_nip = ?,
                 nama_lengkap = ?,
                 username = ?,
                 role = ?
