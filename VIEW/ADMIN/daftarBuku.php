@@ -1,4 +1,18 @@
 <?php
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Jika bukan admin, tendang kembali ke halaman terakhirnya
+if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
+    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
+    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    header("Location: " . $kembali);
+    exit;
+}
+
+
 require_once __DIR__ . "/../../MODEL/m_buku.php";
 
 $bukuModel = new Buku();
@@ -199,7 +213,7 @@ $daftarBuku = $bukuModel->getAllBuku();
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>No</th>
+                                <th>No/th>
                                 <th>Cover</th>
                                 <th>Judul Buku</th>
                                 <th>Penulis</th>
