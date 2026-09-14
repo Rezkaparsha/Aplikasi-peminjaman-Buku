@@ -1,3 +1,20 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Jika bukan admin, tendang kembali ke halaman terakhirnya
+if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
+    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
+    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    header("Location: " . $kembali);
+    exit;
+}
+?>
+
+
+
+
 <!DOCTYPE html>
 <html lang="id">
 <head>

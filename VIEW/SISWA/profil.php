@@ -1,4 +1,17 @@
 <?php
+
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Jika bukan siswa, tendang kembali ke halaman terakhirnya
+if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'siswa') {
+    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke dashboard admin.
+    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/ADMIN/dashboardAdmin.php';
+    header("Location: " . $kembali);
+    exit;
+}
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

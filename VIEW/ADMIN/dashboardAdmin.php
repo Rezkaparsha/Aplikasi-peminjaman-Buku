@@ -1,11 +1,15 @@
 <?php
-//session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Proteksi halaman (Opsional: aktifkan jika fitur login sudah siap)
-// if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-//     header("Location: ../login.php");
-//     exit;
-// }
+// Jika bukan admin, tendang kembali ke halaman terakhirnya
+if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
+    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
+    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    header("Location: " . $kembali);
+    exit;
+}
 
 // Panggil Model yang dibutuhkan
 require_once __DIR__ . "/../../MODEL/m_buku.php";
