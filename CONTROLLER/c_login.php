@@ -20,11 +20,12 @@ if ($aksi === 'register') {
     $nis_nip = trim($_POST['nis_nip'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
+    $kelas = trim($_POST['kelas'] ?? '');
     $password = $_POST['password'] ?? '';
     $konfirmasi_password = $_POST['konfirmasi_password'] ?? '';
 
     // Validasi Kelengkapan Input
-    if (empty($nis_nip) || empty($username) || empty($nama_lengkap) || empty($password)) {
+    if (empty($nis_nip) || empty($username) || empty($nama_lengkap) || empty($kelas) || empty($password)) {
         $_SESSION['error'] = "Semua bidang form wajib diisi!";
         header("Location: /Aplikasi Peminjaman Buku/VIEW/AUTH/register.php");
         exit;
@@ -55,8 +56,8 @@ if ($aksi === 'register') {
     $hashed_password = password_hash($password, PASSWORD_BCRYPT);
     $role = 'siswa';
 
-    $stmtInsert = $koneksi->prepare("INSERT INTO users (`nis_nip`, `username`, nama_lengkap, password, role) VALUES (?, ?, ?, ?, ?)");
-    $stmtInsert->bind_param("sssss", $nis_nip, $username, $nama_lengkap, $hashed_password, $role);
+    $stmtInsert = $koneksi->prepare("INSERT INTO users (`nis_nip`, `username`, nama_lengkap, kelas , password, role) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmtInsert->bind_param("ssssss", $nis_nip, $username, $nama_lengkap, $kelas , $hashed_password, $role);
 
     if ($stmtInsert->execute()) {
         $stmtInsert->close();
@@ -104,9 +105,9 @@ elseif ($aksi === 'login') {
         $_SESSION['role'] = strtolower($user['role']);
 
         if ($_SESSION['role'] === 'admin') {
-            header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=admin");
+            header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/dashboardAdmin.php");
         } else {
-            header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php");
+            header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/dashboardSiswa.php");
         }
         exit;
     } else {

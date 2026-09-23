@@ -14,7 +14,7 @@ class M_Peminjaman
     }
 
 
-    // TAMBAH PEMINJAMAN
+    // 1. TAMBAH PEMINJAMAN
 
     public function tambahPeminjaman(
         $id_user,
@@ -316,8 +316,7 @@ class M_Peminjaman
     }
 
 
-
-    // PEMINJAMAN MILIK USER
+    // 2. PEMINJAMAN MILIK USER
 
     public function getPeminjamanByUser($id_user)
     {
@@ -407,8 +406,7 @@ class M_Peminjaman
     }
 
 
-
-    // SEMUA PEMINJAMAN
+    // 3. SEMUA PEMINJAMAN
 
     public function getSemuaPeminjaman()
     {
@@ -477,8 +475,7 @@ class M_Peminjaman
     }
 
 
-
-    // DETAIL PEMINJAMAN
+    // 4. DETAIL PEMINJAMAN
 
     public function getDetailPeminjaman(
         $id_peminjaman
@@ -571,12 +568,10 @@ class M_Peminjaman
     }
 
 
+    // 5. GET PEMINJAMAN BY ID
 
-    // GET PEMINJAMAN BY ID
-
-    public function getPeminjamanById(
-        $id_peminjaman
-    ) {
+    public function getPeminjamanById($id_peminjaman)
+    {
 
         $stmt =
             $this->koneksi
@@ -586,6 +581,7 @@ class M_Peminjaman
                         p.id_user,
                         p.tanggal_pinjam,
                         p.status,
+                        p.alasan_penolakan,
                         u.nis_nip AS nis,
                         u.nama_lengkap
 
@@ -629,8 +625,51 @@ class M_Peminjaman
     }
 
 
+    // 6. TOLAK PEMINJAMAN (DENGAN ALASAN)
 
-    // SETUJUI PEMINJAMAN
+    public function tolakPeminjaman($id_peminjaman, $alasan_penolakan)
+    {
+        $stmt = $this->koneksi->prepare("
+            UPDATE peminjaman 
+            SET status = 'Ditolak', alasan_penolakan = ? 
+            WHERE id_peminjaman = ? AND status = 'Diajukan'
+        ");
+
+        if (!$stmt) {
+            return [
+                'status' => false,
+                'pesan' => 'Gagal menyiapkan penolakan.'
+            ];
+        }
+
+        $id_peminjaman = (int)$id_peminjaman;
+        $stmt->bind_param("si", $alasan_penolakan, $id_peminjaman);
+
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return [
+                'status' => false,
+                'pesan' => 'Gagal menolak peminjaman.'
+            ];
+        }
+
+        if ($stmt->affected_rows === 0) {
+            $stmt->close();
+            return [
+                'status' => false,
+                'pesan' => 'Peminjaman tidak ditemukan atau sudah diproses.'
+            ];
+        }
+
+        $stmt->close();
+        return [
+            'status' => true,
+            'pesan' => 'Peminjaman berhasil ditolak beserta alasan.'
+        ];
+    }
+
+
+    // 7. SETUJUI PEMINJAMAN
 
     public function setujuiPeminjaman(
         $id_peminjaman,
@@ -979,85 +1018,7 @@ class M_Peminjaman
     }
 
 
-
-    // TOLAK PEMINJAMAN
-
-    public function tolakPeminjaman(
-        $id_peminjaman
-    ) {
-
-        $stmt =
-            $this->koneksi->prepare("
-                UPDATE peminjaman
-
-                SET status = 'Ditolak'
-
-                WHERE id_peminjaman = ?
-
-                AND status = 'Diajukan'
-            ");
-
-
-        if (!$stmt) {
-
-            return [
-                'status' => false,
-                'pesan' =>
-                'Gagal menyiapkan penolakan.'
-            ];
-        }
-
-
-        $id_peminjaman =
-            (int)$id_peminjaman;
-
-
-        $stmt->bind_param(
-            "i",
-            $id_peminjaman
-        );
-
-
-        if (!$stmt->execute()) {
-
-            $stmt->close();
-
-            return [
-                'status' => false,
-                'pesan' =>
-                'Gagal menolak peminjaman.'
-            ];
-        }
-
-
-        if (
-            $stmt->affected_rows
-            === 0
-        ) {
-
-            $stmt->close();
-
-            return [
-                'status' => false,
-                'pesan' =>
-                'Peminjaman tidak ditemukan atau sudah diproses.'
-            ];
-        }
-
-
-        $stmt->close();
-
-
-        return [
-            'status' => true,
-            'pesan' =>
-            'Peminjaman berhasil ditolak.'
-        ];
-    }
-
-
-
-    // CEK KEPEMILIKAN
+    // 8. CEK KEPEMILIKAN
 
     public function cekKepemilikanPeminjaman(
         $id_peminjaman,
@@ -1112,9 +1073,9 @@ class M_Peminjaman
     }
 
 
-    // PROSES PENGEMBALIAN BUKU & PERHITUNGAN DENDA
+    // 9. PROSES PENGEMBALIAN BUKU & PERHITUNGAN DENDA (PER BUKU)
 
-    public function kembalikanBuku($id_peminjaman, $jenis_denda_tambahan = null, $denda_nominal_tambahan = 0)
+    public function kembalikanBuku($id_peminjaman, $kondisi_buku = [], $denda_tambahan = [])
     {
         $id_peminjaman = (int)$id_peminjaman;
         $tanggal_sekarang = date('Y-m-d');
@@ -1122,7 +1083,6 @@ class M_Peminjaman
         $this->koneksi->begin_transaction();
 
         try {
-            // 1. Ambil data peminjaman & user
             $stmtPmj = $this->koneksi->prepare("
                 SELECT p.id_peminjaman, p.id_user, p.tanggal_pinjam, p.status, u.nis_nip, u.nama_lengkap
                 FROM peminjaman p
@@ -1138,7 +1098,6 @@ class M_Peminjaman
                 throw new Exception("Peminjaman tidak ditemukan atau statusnya bukan 'Dipinjam'.");
             }
 
-            // 2. Ambil detail peminjaman
             $stmtDetail = $this->koneksi->prepare("
                 SELECT dp.id_detail, dp.id_buku, dp.jumlah_buku, dp.tanggal_pengembalian, b.judul_buku, b.harga_buku
                 FROM detail_peminjaman dp
@@ -1155,31 +1114,37 @@ class M_Peminjaman
             }
             $stmtDetail->close();
 
-            if (empty($details)) {
-                throw new Exception("Detail peminjaman tidak ditemukan.");
-            }
+            if (empty($details)) throw new Exception("Detail peminjaman tidak ditemukan.");
 
-            // Prepared Statement untuk pengembalian stok
             $stmtStok = $this->koneksi->prepare("UPDATE buku SET stok = stok + ? WHERE id_buku = ?");
-            // Prepared Statement untuk insert histori
+
             $stmtHistori = $this->koneksi->prepare("
                 INSERT INTO histori_transaksi 
-                (id_peminjaman, id_detail, nis, nama_siswa, id_buku, judul_buku, harga_buku, tanggal_pinjam, tanggal_pengembalian, tanggal_dikembalikan, jenis_denda, denda, tanggal_selesai)
+                (id_peminjaman, id_detail, nis_nip, nama_siswa, id_buku, judul_buku, harga_buku, tanggal_pinjam, tanggal_pengembalian, tanggal_dikembalikan, jenis_denda, denda, tanggal_selesai)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
-            $tarif_denda_per_hari = 1000; // Contoh denda keterlambatan: Rp 1.000 / hari
+            $tarif_denda_per_hari = 1000;
 
             foreach ($details as $item) {
-                // Restore stok buku
-                $stmtStok->bind_param("ii", $item['jumlah_buku'], $item['id_buku']);
-                $stmtStok->execute();
+                $id_detail = $item['id_detail'];
+
+                // Ambil kondisi dan denda khusus untuk BUKU INI dari array yang dikirim form
+                $kondisi_item = $kondisi_buku[$id_detail] ?? 'Normal';
+                $denda_nominal_item = (int)($denda_tambahan[$id_detail] ?? 0);
+
+                // Jika buku HILANG, stok TIDAK dikembalikan. Jika Normal/Rusak, stok dikembalikan.
+                if ($kondisi_item !== 'Hilang') {
+                    $stmtStok->bind_param("ii", $item['jumlah_buku'], $item['id_buku']);
+                    $stmtStok->execute();
+                }
 
                 // Hitung Denda Keterlambatan
                 $tgl_kembali_seharusnya = new DateTime($item['tanggal_pengembalian']);
                 $tgl_dikembalikan_real = new DateTime($tanggal_sekarang);
 
                 $total_denda = 0;
+                $selisih_hari = 0;
                 $keterangan_denda = "Tidak Ada";
 
                 if ($tgl_dikembalikan_real > $tgl_kembali_seharusnya) {
@@ -1188,27 +1153,29 @@ class M_Peminjaman
                     $keterangan_denda = "Terlambat " . $selisih_hari . " Hari";
                 }
 
-                // Jika ada denda tambahan (misal: Rusak/Hilang)
-                if (!empty($jenis_denda_tambahan) && $denda_nominal_tambahan > 0) {
-                    $total_denda += $denda_nominal_tambahan;
-                    $keterangan_denda .= " + " . $jenis_denda_tambahan;
+                // Jika ada denda tambahan untuk buku ini (karena rusak/hilang)
+                if ($kondisi_item !== 'Normal' && $denda_nominal_item > 0) {
+                    $total_denda += $denda_nominal_item;
+                    if ($keterangan_denda === "Tidak Ada") {
+                        $keterangan_denda = "Buku " . $kondisi_item;
+                    } else {
+                        $keterangan_denda .= " + Buku " . $kondisi_item;
+                    }
                 }
 
-                // Simpan record denda jika ada nominal
                 if ($total_denda > 0) {
                     $stmtDenda = $this->koneksi->prepare("
-                        INSERT INTO denda (id_detail, jenis_denda, jumlah_denda) VALUES (?, ?, ?)
+                        INSERT INTO denda (id_detail, jenis_denda, jumlah_hari_terlambat, jumlah_denda, tanggal_denda) VALUES (?, ?, ?, ?, ?)
                     ");
-                    $stmtDenda->bind_param("isi", $item['id_detail'], $keterangan_denda, $total_denda);
+                    $stmtDenda->bind_param("isiis", $id_detail, $keterangan_denda, $selisih_hari, $total_denda, $tanggal_sekarang);
                     $stmtDenda->execute();
                     $stmtDenda->close();
                 }
 
-                // Catat ke tabel fisik histori_transaksi
                 $stmtHistori->bind_param(
-                    "iissisissssss",
+                    "iissisissssis",
                     $id_peminjaman,
-                    $item['id_detail'],
+                    $id_detail,
                     $dataPmj['nis_nip'],
                     $dataPmj['nama_lengkap'],
                     $item['id_buku'],
@@ -1227,43 +1194,41 @@ class M_Peminjaman
             $stmtStok->close();
             $stmtHistori->close();
 
-            // 3. Update status detail_peminjaman & peminjaman
-            $stmtUpdDetail = $this->koneksi->prepare("
-                UPDATE detail_peminjaman SET status = 'Dikembalikan', tanggal_dikembalikan = ? WHERE id_peminjaman = ?
-            ");
+            $stmtUpdDetail = $this->koneksi->prepare("UPDATE detail_peminjaman SET status = 'Dikembalikan', tanggal_dikembalikan = ? WHERE id_peminjaman = ?");
             $stmtUpdDetail->bind_param("si", $tanggal_sekarang, $id_peminjaman);
             $stmtUpdDetail->execute();
             $stmtUpdDetail->close();
 
-            $stmtUpdPmj = $this->koneksi->prepare("
-                UPDATE peminjaman SET status = 'Dikembalikan' WHERE id_peminjaman = ?
-            ");
+            $stmtUpdPmj = $this->koneksi->prepare("UPDATE peminjaman SET status = 'Dikembalikan' WHERE id_peminjaman = ?");
             $stmtUpdPmj->bind_param("i", $id_peminjaman);
             $stmtUpdPmj->execute();
             $stmtUpdPmj->close();
 
             $this->koneksi->commit();
 
-            return [
-                'status' => true,
-                'pesan' => 'Pengembalian buku berhasil diproses dan dicatat ke histori.'
-            ];
+            return ['status' => true, 'pesan' => 'Pengembalian berhasil. Kondisi dan stok buku telah disesuaikan.'];
         } catch (Exception $e) {
             $this->koneksi->rollback();
-            return [
-                'status' => false,
-                'pesan' => $e->getMessage()
-            ];
+            return ['status' => false, 'pesan' => $e->getMessage()];
         }
     }
 
-    // AMBIL DATA HISTORI TRANSAKSI (ADMIN)
+
+    // 10. AMBIL DATA HISTORI TRANSAKSI (ADMIN) DENGAN JOIN KELAS
 
     public function getHistoriTransaksi()
     {
-        $sql = "SELECT * FROM histori_transaksi ORDER BY tanggal_dikembalikan DESC";
+        $sql = "
+            SELECT 
+                h.*, 
+                u.kelas 
+            FROM histori_transaksi h
+            LEFT JOIN users u ON h.nis_nip = u.nis_nip
+            ORDER BY h.tanggal_dikembalikan DESC
+        ";
+
         $result = $this->koneksi->query($sql);
-        
+
         $data = [];
         if ($result) {
             while ($row = $result->fetch_assoc()) {
@@ -1271,5 +1236,20 @@ class M_Peminjaman
             }
         }
         return $data;
+    }
+
+
+    // 11. AMBIL JUMLAH BUKU YANG BELUM DIKEMBALIKAN
+
+    public function getJumlahBelumKembali()
+    {
+        $query = "SELECT COUNT(*) as total FROM peminjaman WHERE status = 'Dipinjam'";
+        $result = mysqli_query($this->koneksi, $query);
+
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            return $row['total'];
+        }
+        return 0;
     }
 }

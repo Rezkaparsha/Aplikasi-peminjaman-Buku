@@ -1,20 +1,38 @@
 <?php
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Jika bukan admin, tendang kembali ke halaman terakhirnya
+// 1. Proteksi Akses Admin: Arahkan ke login utama jika tidak ada session admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
-    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
-    header("Location: " . $kembali);
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/AUTH/login.php");
     exit;
 }
+
+// 2. Simpan URL lokasi halaman view ini
+$_SESSION['last_page_admin'] = $_SERVER['REQUEST_URI'];
+
+// 3. Panggil Model Langsung di View
 require_once __DIR__ . "/../../MODEL/m_penerbit.php";
 
 $penerbitModel = new Penerbit();
 $daftarPenerbit = $penerbitModel->getAll();
+
+// ==========================================
+// LOGIKA PAGINATION (10 Data per Halaman)
+// ==========================================
+$limit = 10;
+$total_data = count($daftarPenerbit);
+$total_pages = ceil($total_data / $limit);
+
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+if ($page > $total_pages && $total_pages > 0) $page = $total_pages;
+
+$offset = ($page - 1) * $limit;
+
+// Potong array data sesuai halaman aktif
+$penerbitPaginated = array_slice($daftarPenerbit, $offset, $limit);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -22,6 +40,10 @@ $daftarPenerbit = $penerbitModel->getAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Penerbit - Perpustakaan Online</title>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         /* Reset & Base Styles */
         * {
@@ -30,21 +52,53 @@ $daftarPenerbit = $penerbitModel->getAll();
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        body {
+        
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
             background-color: #f4f7f6;
-            color: #333;
             display: flex;
-            min-height: 100vh;
         }
 
-        /* Main Content Layout */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            height: 100vh;
             overflow: hidden;
         }
-        
+
+        .container {
+            padding: 25px;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            min-width: 100%;
+        }
+
         .topbar {
             background-color: #fff;
             padding: 15px 30px;
@@ -53,23 +107,10 @@ $daftarPenerbit = $penerbitModel->getAll();
             justify-content: space-between;
             align-items: center;
         }
+        
         .topbar h2 {
             font-size: 20px;
             color: #2c3e50;
-        }
-
-        .container {
-            padding: 30px;
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        /* Card Container */
-        .card {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
         }
 
         .page-header {
@@ -80,14 +121,40 @@ $daftarPenerbit = $penerbitModel->getAll();
             border-bottom: 2px solid #ecf0f1;
             padding-bottom: 15px;
         }
+        
         .page-header h3 {
             color: #2c3e50;
             font-size: 22px;
         }
+        
         .page-header p {
             color: #7f8c8d;
             font-size: 13px;
             margin-top: 4px;
+        }
+
+        /* Banner Alert Sesuai Desain */
+        .alert-banner {
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-banner-error {
+            background-color: #fdeaea;
+            color: #c0392b;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .alert-banner-success {
+            background-color: #e8f8f5;
+            color: #27ae60;
+            border-left: 4px solid #2ecc71;
         }
 
         /* Buttons */
@@ -101,6 +168,7 @@ $daftarPenerbit = $penerbitModel->getAll();
             transition: background 0.3s ease;
             display: inline-block;
             text-align: center;
+            border: none;
         }
         .btn-primary {
             background-color: #2ecc71;
@@ -137,17 +205,6 @@ $daftarPenerbit = $penerbitModel->getAll();
             flex-wrap: wrap;
         }
 
-        /* Table Styling */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            min-width: 800px;
-        }
         .data-table th, .data-table td {
             padding: 12px 15px;
             text-align: left;
@@ -170,6 +227,49 @@ $daftarPenerbit = $penerbitModel->getAll();
             text-align: center;
             color: #7f8c8d;
             padding: 30px;
+        }
+
+        .table-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .total-data {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            list-style: none;
+            gap: 5px;
+        }
+
+        .pagination a {
+            padding: 8px 12px;
+            text-decoration: none;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            border: 1px solid #ccd1d1;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+
+        .pagination a.active {
+            background-color: #2ecc71;
+            color: white;
+            border-color: #2ecc71;
+        }
+
+        .pagination a:hover:not(.active) {
+            background-color: #ecf0f1;
         }
     </style>
 </head>
@@ -199,6 +299,23 @@ $daftarPenerbit = $penerbitModel->getAll();
                     </div>
                 </div>
 
+                <!-- BANNER NOTIFIKASI -->
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert-banner alert-banner-error">
+                        <span>⚠️</span>
+                        <div><?= htmlspecialchars($_SESSION['error']); ?></div>
+                    </div>
+                    <?php unset($_SESSION['error']); ?>
+                <?php endif; ?>
+
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert-banner alert-banner-success">
+                        <span>✅</span>
+                        <div><?= htmlspecialchars($_SESSION['success']); ?></div>
+                    </div>
+                    <?php unset($_SESSION['success']); ?>
+                <?php endif; ?>
+
                 <div class="table-responsive">
                     <table class="data-table">
                         <thead>
@@ -213,9 +330,9 @@ $daftarPenerbit = $penerbitModel->getAll();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($daftarPenerbit)): ?>
-                                <?php $no = 1; ?>
-                                <?php foreach ($daftarPenerbit as $penerbit): ?>
+                            <?php if (!empty($penerbitPaginated)): ?>
+                                <?php $no = $offset + 1; ?>
+                                <?php foreach ($penerbitPaginated as $penerbit): ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
                                         <td><strong><?= htmlspecialchars($penerbit['nama_penerbit']) ?></strong></td>
@@ -226,7 +343,7 @@ $daftarPenerbit = $penerbitModel->getAll();
                                         <td>
                                             <div class="action-group">
                                                 <a href="../../CONTROLLER/c_penerbit.php?aksi=edit&id_penerbit=<?= $penerbit['id_penerbit'] ?>" class="btn btn-edit">Edit</a>
-                                                <a href="../../CONTROLLER/c_penerbit.php?aksi=hapus&id_penerbit=<?= $penerbit['id_penerbit'] ?>" class="btn btn-delete" onclick="return confirm('Yakin ingin menghapus penerbit ini?')">Hapus</a>
+                                                <a href="#" onclick="konfirmasiHapus(<?= $penerbit['id_penerbit'] ?>)" class="btn btn-delete">Hapus</a>
                                             </div>
                                         </td>
                                     </tr>
@@ -240,11 +357,58 @@ $daftarPenerbit = $penerbitModel->getAll();
                     </table>
                 </div>
 
+                <?php if (!empty($daftarPenerbit)): ?>
+                    <div class="table-footer">
+                        <p class="total-data">Menampilkan <strong><?= count($penerbitPaginated) ?></strong> dari <strong><?= $total_data ?></strong> total penerbit</p>
+                        
+                        <!-- KONTROL PAGINATION -->
+                        <?php if ($total_pages > 1): ?>
+                            <ul class="pagination">
+                                <?php if ($page > 1): ?>
+                                    <li><a href="?page=<?= $page - 1 ?>">« Prev</a></li>
+                                <?php endif; ?>
+
+                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                    <li>
+                                        <a href="?page=<?= $i ?>" class="<?= ($i === $page) ? 'active' : '' ?>">
+                                            <?= $i ?>
+                                        </a>
+                                    </li>
+                                <?php endfor; ?>
+
+                                <?php if ($page < $total_pages): ?>
+                                    <li><a href="?page=<?= $page + 1 ?>">Next »</a></li>
+                                <?php endif; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
             </div>
 
             <a href="daftarBuku.php" class="btn btn-back">← Kembali ke Daftar Buku</a>
         </div>
     </div>
+
+    <!-- JAVASCRIPT SWEETALERT UNTUK KONFIRMASI HAPUS -->
+    <script>
+        function konfirmasiHapus(id) {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data penerbit yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#95a5a6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "../../CONTROLLER/c_penerbit.php?aksi=hapus&id_penerbit=" + id;
+                }
+            });
+        }
+    </script>
 
 </body>
 </html>

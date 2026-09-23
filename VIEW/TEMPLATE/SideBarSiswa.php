@@ -5,133 +5,267 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Ambil data nama/user jika tersedia
-$namaSiswa = $_SESSION['nama_lengkap'] ?? 'Siswa Perpustakaan';
-$nisSiswa = $_SESSION['nis_nip'] ?? $_SESSION['nis'] ?? '-';
+$namaSiswa = $_SESSION['nama_lengkap'] ?? $_SESSION['nama'] ?? 'Siswa Perpustakaan';
+$nisSiswa  = $_SESSION['nis_nip'] ?? $_SESSION['nis'] ?? '-';
 
 // Dapatkan nama file yang sedang diakses untuk menentukan menu aktif (active link)
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 
-<!-- FontAwesome & Bootstrap Icons CSS (jika belum di-load di file utama) -->
+<!-- FontAwesome Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
     .sidebar-siswa {
-        width: 260px;
+        width: 280px;
+        min-width: 280px;
         min-height: 100vh;
         background: #1e293b; /* Dark Slate Blue */
         color: #f8fafc;
         display: flex;
         flex-direction: column;
-        box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        z-index: 100;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+
     .sidebar-siswa .brand-section {
-        padding: 20px 24px;
+        padding: 24px 20px;
+        background-color: #0f172a;
         border-bottom: 1px solid #334155;
-    }
-    .sidebar-siswa .user-profile-section {
-        padding: 16px 24px;
-        background: #0f172a;
-        border-bottom: 1px solid #334155;
-    }
-    .sidebar-siswa .nav-menu {
-        padding: 16px 12px;
-        flex: 1;
-    }
-    .sidebar-siswa .nav-link-item {
         display: flex;
         align-items: center;
+        gap: 12px;
+    }
+
+    .sidebar-siswa .brand-icon {
+        font-size: 22px;
+        background: #2563eb;
+        color: #ffffff;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
+    .sidebar-siswa .brand-text h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .sidebar-siswa .brand-text small {
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .sidebar-siswa .nav-menu {
+        padding: 20px 12px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .sidebar-siswa .menu-header {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 0 12px 10px 12px;
+        display: block;
+    }
+
+    .sidebar-siswa .sidebar-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .sidebar-siswa .sidebar-menu li {
+        margin-bottom: 4px;
+    }
+
+    .sidebar-siswa .sidebar-menu li a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
         padding: 12px 16px;
         color: #94a3b8;
         text-decoration: none;
         border-radius: 8px;
+        font-size: 13.5px;
         font-weight: 500;
-        margin-bottom: 4px;
-        transition: all 0.2s ease;
+        transition: all 0.2s ease-in-out;
+        white-space: nowrap;
     }
-    .sidebar-siswa .nav-link-item:hover {
-        background: #334155;
-        color: #ffffff;
-    }
-    .sidebar-siswa .nav-link-item.active {
-        background: #2563eb; /* Primary Blue */
-        color: #ffffff;
-    }
-    .sidebar-siswa .nav-link-item i {
-        width: 24px;
+
+    .sidebar-siswa .sidebar-menu li a i {
+        width: 20px;
         font-size: 1.1rem;
-        margin-right: 12px;
+        text-align: center;
     }
-    .sidebar-siswa .logout-section {
-        padding: 16px 12px;
-        border-top: 1px solid #334155;
-    }
-    .sidebar-siswa .btn-logout {
-        color: #ef4444;
-        background: rgba(239, 68, 68, 0.1);
-    }
-    .sidebar-siswa .btn-logout:hover {
-        background: #dc2626;
+
+    .sidebar-siswa .sidebar-menu li a:hover {
+        background-color: #334155;
         color: #ffffff;
+    }
+
+    .sidebar-siswa .sidebar-menu li a.active {
+        background-color: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .sidebar-siswa .sidebar-footer {
+        padding: 16px 15px 20px 15px;
+        background-color: #0f172a;
+        border-top: 1px solid #334155;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .sidebar-siswa .user-profile-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        background: #1e293b;
+        border-radius: 8px;
+        border: 1px solid #334155;
+    }
+
+    .sidebar-siswa .user-avatar {
+        width: 38px;
+        height: 38px;
+        background: #38bdf8;
+        color: #0f172a;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-siswa .user-details {
+        overflow: hidden;
+    }
+
+    .sidebar-siswa .user-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #f8fafc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sidebar-siswa .user-subtext {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .sidebar-siswa .btn-logout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px;
+        text-align: center;
+        background-color: #ef4444;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        transition: 0.2s ease-in-out;
+        border: none;
+        cursor: pointer;
+    }
+
+    .sidebar-siswa .btn-logout:hover {
+        background-color: #dc2626;
     }
 </style>
 
 <div class="sidebar-siswa">
     <!-- Brand / Logo Aplikasi -->
-    <div class="brand-section d-flex align-items-center">
-        <i class="fa-solid fa-book-bookmark text-primary fs-3 me-3"></i>
-        <div>
-            <h6 class="fw-bold mb-0 text-white">E-PERPUS</h6>
-            <small class="text-muted" style="font-size: 11px;">Panel Siswa</small>
+    <div class="brand-section">
+        <div class="brand-icon">
+            <i class="fa-solid fa-book-bookmark"></i>
         </div>
-    </div>
-
-    <!-- Info User (Siswa) -->
-    <div class="user-profile-section d-flex align-items-center">
-        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: bold;">
-            <?= strtoupper(substr($namaSiswa, 0, 1)) ?>
-        </div>
-        <div class="overflow-hidden">
-            <span class="d-block fw-semibold text-truncate text-white" style="font-size: 14px;" title="<?= htmlspecialchars($namaSiswa) ?>">
-                <?= htmlspecialchars($namaSiswa) ?>
-            </span>
-            <small class="text-muted d-block" style="font-size: 12px;">NIS/NIP: <?= htmlspecialchars($nisSiswa) ?></small>
+        <div class="brand-text">
+            <h3>E-PERPUS</h3>
+            <small>Panel Siswa</small>
         </div>
     </div>
 
     <!-- Menu Navigasi Utama Siswa -->
     <div class="nav-menu">
-        <small class="text-uppercase fw-bold text-muted px-3 mb-2 d-block" style="font-size: 10px; letter-spacing: 0.5px;">Menu Utama</small>
+        <span class="menu-header">Menu Utama</span>
         
-        <!-- Link Katalog Buku / Form Pinjam -->
-        <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php" 
-           class="nav-link-item <?= ($currentPage === 'daftarBuku.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-book-open"></i>
-            <span>Katalog Buku</span>
-        </a>
-
-        <!-- Link Riwayat Peminjaman Saya -->
-        <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/peminjaman.php" 
-           class="nav-link-item <?= ($currentPage === 'peminjaman.php' || $currentPage === 'detailPeminjaman.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-list-check"></i>
-            <span>Peminjaman Saya</span>
-        </a>
-
-        <!-- Link Profil / Pengaturan Akun -->
-        <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/profil.php" 
-           class="nav-link-item <?= ($currentPage === 'profil.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-user-gear"></i>
-            <span>Profil Saya</span>
-        </a>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/dashboardSiswa.php" 
+                   class="<?= ($currentPage === 'dashboardSiswa.php') ? 'active' : '' ?>">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php" 
+                   class="<?= ($currentPage === 'daftarBuku.php') ? 'active' : '' ?>">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Katalog Buku</span>
+                </a>
+            </li>
+            <li>
+                <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/peminjaman.php" 
+                   class="<?= ($currentPage === 'peminjaman.php') ? 'active' : '' ?>">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span>Peminjaman Saya</span>
+                </a>
+            </li>
+            <li>
+                <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/profil.php" 
+                   class="<?= ($currentPage === 'profil.php') ? 'active' : '' ?>">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span>Profil Saya</span>
+                </a>
+            </li>
+        </ul>
     </div>
 
-    <!-- Tombol Logout -->
-    <div class="logout-section">
+    <!-- Info Profile & Tombol Logout di Footer -->
+    <div class="sidebar-footer">
+        <div class="user-profile-card">
+            <div class="user-avatar">
+                <?= strtoupper(substr($namaSiswa, 0, 1)) ?>
+            </div>
+            <div class="user-details">
+                <div class="user-name" title="<?= htmlspecialchars($namaSiswa) ?>">
+                    <?= htmlspecialchars($namaSiswa) ?>
+                </div>
+                <div class="user-subtext">
+                    NIS: <?= htmlspecialchars($nisSiswa) ?>
+                </div>
+            </div>
+        </div>
+
         <a href="/Aplikasi Peminjaman Buku/CONTROLLER/c_login.php?aksi=logout" 
-           class="nav-link-item btn-logout" 
+           class="btn-logout" 
            onclick="return confirm('Apakah Anda yakin ingin keluar dari sistem?')">
             <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Keluar / Logout</span>
+            <span>Logout</span>
         </a>
     </div>
 </div>

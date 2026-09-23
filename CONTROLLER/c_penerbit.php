@@ -1,4 +1,9 @@
 <?php
+// WAJIB: Jalankan session agar $_SESSION bisa berfungsi
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . "/../MODEL/m_penerbit.php";
 
 $penerbitModel = new Penerbit();
@@ -18,7 +23,8 @@ if ($aksi === 'tambah') {
     $email        = trim($_POST['email'] ?? '');
 
     if ($namaPenerbit === '') {
-        echo "Nama penerbit wajib diisi.";
+        $_SESSION['error'] = "Nama penerbit wajib diisi.";
+        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
         exit;
     }
 
@@ -29,12 +35,12 @@ if ($aksi === 'tambah') {
     $penerbitModel->email         = $email;
 
     if ($penerbitModel->insert()) {
-        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
-        exit;
+        $_SESSION['success'] = "Penerbit berhasil ditambahkan.";
     } else {
-        echo "Gagal menambahkan penerbit.";
-        exit;
+        $_SESSION['error'] = "Gagal menambahkan penerbit.";
     }
+    header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
+    exit;
 }
 
 // EDIT PENERBIT
@@ -49,7 +55,8 @@ elseif ($aksi === 'edit') {
     $dataPenerbit = $penerbitModel->getById($idPenerbit);
 
     if (!$dataPenerbit) {
-        echo "Data penerbit tidak ditemukan.";
+        $_SESSION['error'] = "Data penerbit tidak ditemukan.";
+        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
         exit;
     }
 
@@ -72,7 +79,8 @@ elseif ($aksi === 'update') {
     $email        = trim($_POST['email'] ?? '');
 
     if ($idPenerbit <= 0 || $namaPenerbit === '') {
-        echo "Data penerbit tidak valid.";
+        $_SESSION['error'] = "Data penerbit tidak valid.";
+        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
         exit;
     }
 
@@ -84,34 +92,36 @@ elseif ($aksi === 'update') {
     $penerbitModel->email         = $email;
 
     if ($penerbitModel->update()) {
-        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
-        exit;
+        $_SESSION['success'] = "Data penerbit berhasil diperbarui.";
     } else {
-        echo "Gagal memperbarui penerbit.";
-        exit;
+        $_SESSION['error'] = "Gagal memperbarui penerbit.";
     }
+    header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
+    exit;
 }
 
 // HAPUS PENERBIT
 elseif ($aksi === 'hapus') {
     $idPenerbit = (int) ($_GET['id_penerbit'] ?? 0);
 
-    if ($idPenerbit <= 0) {
-        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
-        exit;
-    }
-
-    if ($penerbitModel->delete($idPenerbit)) {
-        header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
-        exit;
+    if ($idPenerbit > 0) {
+        // Cek keterhubungan dengan buku
+        if ($penerbitModel->isUsedInBuku($idPenerbit)) {
+            $_SESSION['error'] = "Penerbit tidak dapat dihapus karena masih terhubung dengan data buku di perpustakaan!";
+        } else {
+            $hapus = $penerbitModel->delete($idPenerbit);
+            if ($hapus) {
+                $_SESSION['success'] = "Penerbit berhasil dihapus.";
+            } else {
+                $_SESSION['error'] = "Gagal menghapus penerbit.";
+            }
+        }
     } else {
-        echo "
-            <h3>Penerbit tidak dapat dihapus.</h3>
-            <p>Penerbit mungkin masih digunakan oleh salah satu buku.</p>
-            <a href='../VIEW/ADMIN/daftarPenerbit.php'>Kembali</a>
-        ";
-        exit;
+        $_SESSION['error'] = "ID Penerbit tidak valid.";
     }
+    
+    header("Location: ../VIEW/ADMIN/daftarPenerbit.php");
+    exit;
 }
 
 // AKSI TIDAK DIKENAL

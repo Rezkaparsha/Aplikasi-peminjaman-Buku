@@ -4,18 +4,41 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Jika bukan admin, tendang kembali ke halaman terakhirnya
+// 1. Proteksi Akses Admin: Arahkan ke login utama jika tidak ada session admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
-    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
-    header("Location: " . $kembali);
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/AUTH/login.php");
+    exit;
+}
+
+// 2. Simpan URL lokasi halaman view ini
+$_SESSION['last_page_admin'] = $_SERVER['REQUEST_URI'];
+
+// 3. Ambil ID Kategori dari URL GET
+$idKategori = (int)($_GET['id_kategori'] ?? 0);
+
+if ($idKategori <= 0) {
+    $_SESSION['error'] = "ID Kategori tidak valid.";
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarKategori.php");
+    exit;
+}
+
+// 4. Panggil Model Kategori Langsung di View
+require_once __DIR__ . "/../../MODEL/m_kategori.php";
+$kategoriModel = new Kategori();
+
+// Ambil data detail kategori berdasarkan ID (Sesuaikan nama method dengan model kamu, misal: getById)
+$dataKategori = $kategoriModel->getById($idKategori);
+
+if (!$dataKategori) {
+    $_SESSION['error'] = "Data kategori tidak ditemukan.";
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarKategori.php");
     exit;
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,54 +51,81 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        /* 1. Kunci Layar Utama agar tidak bisa di-scroll / digeser luar-dalam */
+        html,
         body {
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            /* Mengunci scrollbar browser utama */
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
+        }
+
+        body {
+            display: flex;
+                        background-color: #f4f7f6;
             color: #333;
             display: flex;
             min-height: 100vh;
         }
 
-        /* Main Content Layout */
+        /* 2. Main Content mengisi sisa layar */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            height: 100vh;
             overflow: hidden;
         }
-        
-        .topbar {
-            background-color: #fff;
-            padding: 15px 30px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .topbar h2 {
-            font-size: 20px;
-            color: #2c3e50;
-        }
 
+        /* 3. Container Form (Dapat di-scroll secara independen jika layar laptop kecil/pendek) */
         .container {
             padding: 30px;
             flex: 1;
             overflow-y: auto;
+            /* Aktifkan scroll bawah jika isi form tinggi */
+            overflow-x: hidden;
+            /* Mencegah layar bergeser ke samping */
         }
 
-        /* Card Container */
+        /* 4. Card khusus Formulir (Bisa disesuaikan ukurannya) */
         .card {
             background: #ffffff;
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            max-width: 600px;
+            width: 100%;
+            /* Khusus halaman Tambah / Edit / Edit Profil: 
+       Gunakan max-width 600px - 700px agar form rapi dan tidak terlalu lebar */
+            max-width: 650px;
         }
+
+        .topbar {
+            background-color: #fff;
+            padding: 15px 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            font-size: 20px;
+            color: #2c3e50;
+        }
+
 
         .card-header {
             border-bottom: 2px solid #ecf0f1;
             padding-bottom: 12px;
             margin-bottom: 20px;
         }
+
         .card-header h3 {
             color: #2c3e50;
             font-size: 18px;
@@ -85,7 +135,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
         .form-group {
             margin-bottom: 18px;
         }
-        
+
         .form-group label {
             display: block;
             font-weight: 600;
@@ -103,7 +153,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             color: #2c3e50;
             transition: all 0.3s ease;
         }
-        
+
         .form-control:focus {
             border-color: #3498db;
             outline: none;
@@ -138,14 +188,20 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             color: white;
             flex: 1;
         }
-        .btn-submit:hover { background-color: #2980b9; }
+
+        .btn-submit:hover {
+            background-color: #2980b9;
+        }
 
         .btn-cancel {
             background-color: #e74c3c;
             color: white;
             flex: 1;
         }
-        .btn-cancel:hover { background-color: #c0392b; }
+
+        .btn-cancel:hover {
+            background-color: #c0392b;
+        }
 
         /* Error state */
         .alert-error {
@@ -158,6 +214,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
         }
     </style>
 </head>
+
 <body>
 
     <!-- Sidebar Admin -->
@@ -179,6 +236,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
 
                 <?php if (!empty($dataKategori)): ?>
 
+                    <!-- Form POST tetap diarahkan ke Controller untuk eksekusi update query -->
                     <form action="/Aplikasi Peminjaman Buku/CONTROLLER/c_kategori.php?aksi=update" method="POST">
 
                         <input type="hidden" name="id_kategori" value="<?= htmlspecialchars($dataKategori['id_kategori']) ?>">
@@ -196,14 +254,14 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
                         <div class="form-group">
                             <label for="status">Status</label>
                             <select id="status" name="status" class="form-control" required>
-                                <option value="aktif" <?= ($dataKategori['status'] === 'aktif') ? 'selected' : '' ?>>Aktif</option>
-                                <option value="nonaktif" <?= ($dataKategori['status'] === 'nonaktif') ? 'selected' : '' ?>>Nonaktif</option>
+                                <option value="aktif" <?= (strtolower($dataKategori['status'] ?? '') === 'aktif') ? 'selected' : '' ?>>Aktif</option>
+                                <option value="nonaktif" <?= (strtolower($dataKategori['status'] ?? '') === 'nonaktif') ? 'selected' : '' ?>>Nonaktif</option>
                             </select>
                         </div>
 
                         <div class="action-group">
                             <button type="submit" class="btn btn-submit">Simpan Perubahan</button>
-                            <a href="../VIEW/ADMIN/daftarKategori.php" class="btn btn-cancel">Batal</a>
+                            <a href="/Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarKategori.php" class="btn btn-cancel">Batal</a>
                         </div>
 
                     </form>
@@ -221,4 +279,5 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
     </div>
 
 </body>
+
 </html>

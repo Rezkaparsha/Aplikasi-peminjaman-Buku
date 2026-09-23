@@ -64,6 +64,28 @@ class Penulis
         return $data;
     }
 
+    // CEK APAKAH PENULIS MASIH TERHUBUNG DENGAN BUKU
+    public function isUsedInBuku($id_penulis)
+    {
+        $stmt = $this->koneksi->prepare("
+            SELECT COUNT(*) AS total 
+            FROM buku_penulis 
+            WHERE id_penulis = ?
+        ");
+
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $id_penulis);
+        $stmt->execute();
+
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return ($result['total'] > 0);
+    }
+
     // MENAMBAHKAN PENULIS
     public function insert()
     {
@@ -119,28 +141,31 @@ class Penulis
         return $hasil;
     }
 
-    // HAPUS PENULIS
+    // HAPUS PENULIS (DENGAN PENANGANAN EXCEPTION)
     public function delete($id_penulis)
     {
-        $stmt = $this->koneksi->prepare("
-            DELETE FROM penulis
-            WHERE id_penulis = ?
-        ");
-
-        if (!$stmt) {
+        if ($this->isUsedInBuku($id_penulis)) {
             return false;
         }
 
-        $stmt->bind_param(
-            "i",
-            $id_penulis
-        );
+        try {
+            $stmt = $this->koneksi->prepare("
+                DELETE FROM penulis
+                WHERE id_penulis = ?
+            ");
 
-        $hasil = $stmt->execute();
+            if (!$stmt) {
+                return false;
+            }
 
-        $stmt->close();
+            $stmt->bind_param("i", $id_penulis);
+            $hasil = $stmt->execute();
+            $stmt->close();
 
-        return $hasil;
+            return $hasil;
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
     }
 }
 ?>

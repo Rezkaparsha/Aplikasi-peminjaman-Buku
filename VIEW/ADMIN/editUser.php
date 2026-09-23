@@ -4,24 +4,45 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Jika bukan admin, tendang kembali ke halaman terakhirnya
+// 1. Proteksi Akses Admin (Poin 1 Keamanan)
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
-    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    $kembali = $_SESSION['last_page_siswa'] ?? '/Aplikasi Peminjaman Buku/VIEW/SISWA/dashboardSiswa.php';
     header("Location: " . $kembali);
     exit;
 }
 
-require_once __DIR__ . "/../../MODEL/m_users.php";
+$_SESSION['last_page_admin'] = $_SERVER['REQUEST_URI'];
 
-// Pastikan data user dikirim dari controller
-if (!isset($dataUser)) {
-    die("Data user tidak ditemukan.");
+// 2. Ambil ID User dari URL
+$id_user = (int)($_GET['id_user'] ?? 0);
+
+if ($id_user <= 0) {
+    $_SESSION['error'] = "ID User tidak valid.";
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
+    exit;
+}
+if ($id_user <= 0) {
+    $_SESSION['error'] = "ID User tidak valid.";
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
+    exit;
+}
+// 3. Panggil Model Users Langsung untuk Mengambil Data User Berdasarkan ID
+require_once __DIR__ . "/../../MODEL/m_users.php";
+$userModel = new Users();
+
+// Mengambil data user berdasarkan ID (sesuaikan nama method dengan m_users.php kamu, misal: getById atau getUserById)
+$dataUser = $userModel->getById($id_user);
+
+if (!$dataUser) {
+    $_SESSION['error'] = "Data user tidak ditemukan di database.";
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php");
+    exit;
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,6 +55,7 @@ if (!isset($dataUser)) {
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         body {
             background-color: #f4f7f6;
             color: #333;
@@ -48,15 +70,16 @@ if (!isset($dataUser)) {
             flex-direction: column;
             overflow: hidden;
         }
-        
+
         .topbar {
             background-color: #fff;
             padding: 15px 30px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .topbar h2 {
             font-size: 20px;
             color: #2c3e50;
@@ -89,6 +112,7 @@ if (!isset($dataUser)) {
             padding-bottom: 12px;
             margin-bottom: 20px;
         }
+
         .card-header h3 {
             color: #2c3e50;
             font-size: 18px;
@@ -98,7 +122,7 @@ if (!isset($dataUser)) {
         .form-group {
             margin-bottom: 18px;
         }
-        
+
         .form-group label {
             display: block;
             font-weight: 600;
@@ -116,7 +140,7 @@ if (!isset($dataUser)) {
             color: #2c3e50;
             transition: all 0.3s ease;
         }
-        
+
         .form-control:focus {
             border-color: #3498db;
             outline: none;
@@ -147,23 +171,33 @@ if (!isset($dataUser)) {
             color: white;
             flex: 1;
         }
-        .btn-submit:hover { background-color: #2980b9; }
+
+        .btn-submit:hover {
+            background-color: #2980b9;
+        }
 
         .btn-warning {
             background-color: #e67e22;
             color: white;
             width: 100%;
         }
-        .btn-warning:hover { background-color: #d35400; }
+
+        .btn-warning:hover {
+            background-color: #d35400;
+        }
 
         .btn-cancel {
             background-color: #e74c3c;
             color: white;
             flex: 1;
         }
-        .btn-cancel:hover { background-color: #c0392b; }
+
+        .btn-cancel:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Sidebar Admin -->
@@ -179,7 +213,7 @@ if (!isset($dataUser)) {
         <!-- Main Container -->
         <div class="container">
             <div class="form-grid">
-                
+
                 <!-- CARD EDIT PROFIL USER -->
                 <div class="card">
                     <div class="card-header">
@@ -191,7 +225,7 @@ if (!isset($dataUser)) {
 
                         <div class="form-group">
                             <label for="nis_nip">NIS / NIP</label>
-                            <input type="text" id="nis" name="nis" class="form-control" value="<?= htmlspecialchars($dataUser['nis_nip']) ?>" placeholder="Masukkan NIS/NIP">
+                            <input type="text" id="nis_nip" name="nis_nip" class="form-control" value="<?= htmlspecialchars($dataUser['nis_nip']) ?>" placeholder="Masukkan NIS/NIP">
                         </div>
 
                         <div class="form-group">
@@ -199,6 +233,11 @@ if (!isset($dataUser)) {
                             <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-control" value="<?= htmlspecialchars($dataUser['nama_lengkap']) ?>" required>
                         </div>
 
+                        <div class="form-group">
+                            <label for="kelas">Kelas</label>
+                            <input type="text" id="kelas" name="kelas" class="form-control" value="<?= htmlspecialchars($dataUser['kelas'] ?? '') ?>">
+                        </div>
+                        
                         <div class="form-group">
                             <label for="username">Username</label>
                             <input type="text" id="username" name="username" class="form-control" value="<?= htmlspecialchars($dataUser['username']) ?>" required>
@@ -215,7 +254,7 @@ if (!isset($dataUser)) {
 
                         <div class="action-group">
                             <button type="submit" class="btn btn-submit">Simpan Perubahan</button>
-                            <a href="../VIEW/ADMIN/daftarUser.php" class="btn btn-cancel">Batal</a>
+                            <a href="/Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarUser.php" class="btn btn-cancel">Batal</a>
                         </div>
                     </form>
                 </div>
@@ -245,4 +284,5 @@ if (!isset($dataUser)) {
     </div>
 
 </body>
+
 </html>

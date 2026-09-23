@@ -52,6 +52,11 @@ if (isset($_SESSION['id_user'])) {
                 </div>
 
                 <div class="mb-3">
+                    <label class="form-label small fw-bold">Kelas</label>
+                    <input type="text" name="kelas" class="form-control" placeholder="Masukkan Kelas" required>
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label small fw-bold">Password</label>
                     <input type="password" name="password" class="form-control" placeholder="Buat Password" required>
                 </div>

@@ -82,6 +82,28 @@ class Kategori
         return $data;
     }
 
+    // CEK APAKAH KATEGORI MASIH TERHUBUNG DENGAN BUKU
+    public function isUsedInBuku($id_kategori)
+    {
+        $stmt = $this->koneksi->prepare("
+            SELECT COUNT(*) AS total 
+            FROM buku 
+            WHERE id_kategori = ?
+        ");
+
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $id_kategori);
+        $stmt->execute();
+
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return ($result['total'] > 0);
+    }
+
     public function insert()
     {
         $stmt = $this->koneksi->prepare(
@@ -132,20 +154,29 @@ class Kategori
         return $hasil;
     }
 
+    // HAPUS KATEGORI (DENGAN EXCEPTION)
     public function delete($id_kategori)
     {
-        $stmt = $this->koneksi->prepare(
-            "DELETE FROM kategori WHERE id_kategori = ?"
-        );
-
-        if (!$stmt) {
+        if ($this->isUsedInBuku($id_kategori)) {
             return false;
         }
 
-        $stmt->bind_param("i", $id_kategori);
-        $hasil = $stmt->execute();
-        $stmt->close();
+        try {
+            $stmt = $this->koneksi->prepare(
+                "DELETE FROM kategori WHERE id_kategori = ?"
+            );
 
-        return $hasil;
+            if (!$stmt) {
+                return false;
+            }
+
+            $stmt->bind_param("i", $id_kategori);
+            $hasil = $stmt->execute();
+            $stmt->close();
+
+            return $hasil;
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
     }
 }

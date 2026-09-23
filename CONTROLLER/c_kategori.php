@@ -1,10 +1,15 @@
 <?php
+// WAJIB: Jalankan session agar $_SESSION bisa berfungsi
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once __DIR__ . "/../MODEL/m_kategori.php";
 
 $kategoriModel = new Kategori();
 $aksi = $_GET['aksi'] ?? '';
 
+// 1. TAMBAH KATEGORI
 if ($aksi === 'tambah') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: ../VIEW/ADMIN/tambahKategori.php");
@@ -16,7 +21,8 @@ if ($aksi === 'tambah') {
     $status = $_POST['status'] ?? 'aktif';
 
     if ($namaKategori === '') {
-        echo "Nama kategori wajib diisi.";
+        $_SESSION['error'] = "Nama kategori wajib diisi.";
+        header("Location: ../VIEW/ADMIN/daftarKategori.php");
         exit;
     }
 
@@ -29,15 +35,16 @@ if ($aksi === 'tambah') {
     $kategoriModel->status = $status;
 
     if ($kategoriModel->insert()) {
-        header("Location: ../VIEW/ADMIN/daftarKategori.php");
-        exit;
+        $_SESSION['success'] = "Kategori berhasil ditambahkan.";
+    } else {
+        $_SESSION['error'] = "Gagal menambahkan kategori.";
     }
-
-    echo "Gagal menambahkan kategori.";
+    header("Location: ../VIEW/ADMIN/daftarKategori.php");
     exit;
 }
 
-if ($aksi === 'edit') {
+// 2. TAMPILKAN FORM EDIT
+elseif ($aksi === 'edit') {
     $idKategori = (int)($_GET['id_kategori'] ?? 0);
 
     if ($idKategori <= 0) {
@@ -48,7 +55,8 @@ if ($aksi === 'edit') {
     $dataKategori = $kategoriModel->getById($idKategori);
 
     if (!$dataKategori) {
-        echo "Data kategori tidak ditemukan.";
+        $_SESSION['error'] = "Data kategori tidak ditemukan.";
+        header("Location: ../VIEW/ADMIN/daftarKategori.php");
         exit;
     }
 
@@ -56,7 +64,8 @@ if ($aksi === 'edit') {
     exit;
 }
 
-if ($aksi === 'update') {
+// 3. PROSES UPDATE KATEGORI
+elseif ($aksi === 'update') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: ../VIEW/ADMIN/daftarKategori.php");
         exit;
@@ -68,7 +77,8 @@ if ($aksi === 'update') {
     $status = $_POST['status'] ?? 'aktif';
 
     if ($idKategori <= 0 || $namaKategori === '') {
-        echo "Data kategori tidak valid.";
+        $_SESSION['error'] = "Data kategori tidak valid.";
+        header("Location: ../VIEW/ADMIN/daftarKategori.php");
         exit;
     }
 
@@ -82,32 +92,41 @@ if ($aksi === 'update') {
     $kategoriModel->status = $status;
 
     if ($kategoriModel->update()) {
-        header("Location: ../VIEW/ADMIN/daftarKategori.php");
-        exit;
+        $_SESSION['success'] = "Data kategori berhasil diperbarui.";
+    } else {
+        $_SESSION['error'] = "Gagal memperbarui kategori.";
     }
-
-    echo "Gagal memperbarui kategori.";
+    header("Location: ../VIEW/ADMIN/daftarKategori.php");
     exit;
 }
 
-if ($aksi === 'hapus') {
+// 4. HAPUS KATEGORI
+elseif ($aksi === 'hapus') {
     $idKategori = (int)($_GET['id_kategori'] ?? 0);
 
-    if ($idKategori <= 0) {
-        header("Location: ../VIEW/ADMIN/daftarKategori.php");
-        exit;
+    if ($idKategori > 0) {
+        // Cek keterhubungan dengan buku
+        if ($kategoriModel->isUsedInBuku($idKategori)) {
+            $_SESSION['error'] = "Kategori tidak dapat dihapus karena masih terhubung dengan data buku di perpustakaan!";
+        } else {
+            $hapus = $kategoriModel->delete($idKategori);
+            if ($hapus) {
+                $_SESSION['success'] = "Kategori berhasil dihapus.";
+            } else {
+                $_SESSION['error'] = "Gagal menghapus kategori.";
+            }
+        }
+    } else {
+        $_SESSION['error'] = "ID Kategori tidak valid.";
     }
 
-    if ($kategoriModel->delete($idKategori)) {
-        header("Location: ../VIEW/ADMIN/daftarKategori.php");
-        exit;
-    }
-
-    echo "<h3>Kategori tidak dapat dihapus.</h3>
-          <p>Kategori mungkin masih digunakan oleh salah satu buku.</p>
-          <a href='../VIEW/ADMIN/daftarKategori.php'>Kembali</a>";
+    header("Location: ../VIEW/ADMIN/daftarKategori.php");
     exit;
 }
 
-header("Location: ../VIEW/ADMIN/daftarKategori.php");
-exit;
+// 5. DEFAULT
+else {
+    header("Location: ../VIEW/ADMIN/daftarKategori.php");
+    exit;
+}
+?>

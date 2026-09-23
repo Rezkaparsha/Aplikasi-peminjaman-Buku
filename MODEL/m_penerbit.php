@@ -76,6 +76,28 @@ class Penerbit
         return $data;
     }
 
+    // CEK APAKAH PENERBIT MASIH TERHUBUNG DENGAN BUKU
+    public function isUsedInBuku($id_penerbit)
+    {
+        $stmt = $this->koneksi->prepare("
+            SELECT COUNT(*) AS total 
+            FROM buku 
+            WHERE id_penerbit = ?
+        ");
+
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $id_penerbit);
+        $stmt->execute();
+
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return ($result['total'] > 0);
+    }
+
     // TAMBAH PENERBIT
     public function insert()
     {
@@ -150,25 +172,31 @@ class Penerbit
         return $hasil;
     }
 
-    // HAPUS PENERBIT
+    // HAPUS PENERBIT (DENGAN EXCEPTION)
     public function delete($id_penerbit)
     {
-        $stmt = $this->koneksi->prepare("
-            DELETE FROM penerbit
-            WHERE id_penerbit = ?
-        ");
-
-        if (!$stmt) {
+        if ($this->isUsedInBuku($id_penerbit)) {
             return false;
         }
 
-        $stmt->bind_param("i", $id_penerbit);
+        try {
+            $stmt = $this->koneksi->prepare("
+                DELETE FROM penerbit
+                WHERE id_penerbit = ?
+            ");
 
-        $hasil = $stmt->execute();
+            if (!$stmt) {
+                return false;
+            }
 
-        $stmt->close();
+            $stmt->bind_param("i", $id_penerbit);
+            $hasil = $stmt->execute();
+            $stmt->close();
 
-        return $hasil;
+            return $hasil;
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
     }
 }
 ?>

@@ -4,13 +4,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Jika bukan admin, tendang kembali ke halaman terakhirnya
+// Proteksi Akses Admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
-    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    $kembali = $_SESSION['last_page_siswa'] ?? '/Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=dashboard_siswa';
     header("Location: " . $kembali);
     exit;
 }
+
+// Simpan URL lokasi controller aktif saat ini
+$_SESSION['last_page_admin'] = $_SERVER['REQUEST_URI'];
 
 require_once __DIR__ . "/../../MODEL/m_kategori.php";
 require_once __DIR__ . "/../../MODEL/m_penerbit.php";
@@ -150,7 +152,7 @@ $dataPenulis = $penulisModel->getAll();
     <div class="container">
         <h2>Tambah Buku Baru</h2>
 
-        <form action="../../CONTROLLER/c_buku.php?aksi=tambah" method="POST" enctype="multipart/form-data">
+        <form action="/Aplikasi Peminjaman Buku/CONTROLLER/c_buku.php?aksi=tambah" method="POST" enctype="multipart/form-data">
 
             <div class="form-group">
                 <label for="judul_buku">Judul Buku</label>

@@ -1,7 +1,5 @@
 <?php
 
-
-
 require_once 'm_koneksi.php';
 
 class HistoriTransaksi
@@ -12,7 +10,7 @@ class HistoriTransaksi
     public $id_peminjaman;
     public $id_detail;
 
-    public $nis;
+    public $nis_nip;
     public $nama_siswa;
 
     public $id_buku;
@@ -80,18 +78,18 @@ class HistoriTransaksi
 
     // HISTORI BERDASARKAN USER
 
-    public function getByUser($nis)
+    public function getByUser($nis_nip)
     {
         $stmt = $this->koneksi->prepare("
             SELECT *
             FROM histori_transaksi
-            WHERE nis = ?
+            WHERE nis_nip = ?
             ORDER BY tanggal_selesai DESC
         ");
 
         $stmt->bind_param(
             "s",
-            $nis
+            $nis_nip
         );
 
         $stmt->execute();
@@ -147,7 +145,7 @@ class HistoriTransaksi
             (
                 id_peminjaman,
                 id_detail,
-                nis,
+                nis_nip,
                 nama_siswa,
                 id_buku,
                 judul_buku,
@@ -162,11 +160,12 @@ class HistoriTransaksi
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
+        // Format tipe data: iissisissssis (13 kolom)
         $stmt->bind_param(
             "iissisissssis",
             $this->id_peminjaman,
             $this->id_detail,
-            $this->nis,
+            $this->nis_nip,
             $this->nama_siswa,
             $this->id_buku,
             $this->judul_buku,
@@ -210,11 +209,9 @@ class HistoriTransaksi
         $stmt = $this->koneksi->prepare("
             SELECT *
             FROM histori_transaksi
-
-            WHERE nis LIKE ?
+            WHERE nis_nip LIKE ?
                OR nama_siswa LIKE ?
                OR judul_buku LIKE ?
-
             ORDER BY tanggal_selesai DESC
         ");
 
@@ -238,4 +235,3 @@ class HistoriTransaksi
         return $data;
     }
 }
-?>

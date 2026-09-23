@@ -7,8 +7,9 @@ class Users
     private $koneksi;
 
     public $id_user;
-    public $nis;
+    public $nis_nip;
     public $nama_lengkap;
+    public $kelas;
     public $username;
     public $password;
     public $role;
@@ -60,14 +61,14 @@ class Users
         return $stmt->get_result()->fetch_assoc();
     }
 
-    // MENCARI USER BERDASARKAN NIS
-    public function getByNis($nis)
+    // MENCARI USER BERDASARKAN nis_nip
+    public function getByNis_nip($nis_nip)
     {
         $stmt = $this->koneksi->prepare(
-            "SELECT * FROM users WHERE nis = ?"
+            "SELECT * FROM users WHERE nis_nip = ?"
         );
 
-        $stmt->bind_param("s", $nis);
+        $stmt->bind_param("s", $nis_nip);
         $stmt->execute();
 
         return $stmt->get_result()->fetch_assoc();
@@ -78,14 +79,15 @@ class Users
     {
         $stmt = $this->koneksi->prepare(
             "INSERT INTO users
-            (nis_nip, nama_lengkap, username, password, role)
-            VALUES (?, ?, ?, ?, ?)"
+            (nis_nip, nama_lengkap, kelas, username, password, role)
+            VALUES (?, ?, ?, ?, ?, ?)"
         );
 
         $stmt->bind_param(
-            "sssss",
-            $this->nis,
+            "ssssss",
+            $this->nis_nip,
             $this->nama_lengkap,
+            $this->kelas,
             $this->username,
             $this->password,
             $this->role
@@ -101,15 +103,17 @@ class Users
             "UPDATE users SET
                 nis_nip = ?,
                 nama_lengkap = ?,
+                kelas = ?,
                 username = ?,
                 role = ?
              WHERE id_user = ?"
         );
 
         $stmt->bind_param(
-            "ssssi",
-            $this->nis,
+            "sssssi",
+            $this->nis_nip,
             $this->nama_lengkap,
+            $this->kelas,
             $this->username,
             $this->role,
             $this->id_user

@@ -1,10 +1,15 @@
 <?php
+// WAJIB: Jalankan session agar $_SESSION['error'] / $_SESSION['success'] bisa tersimpan
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . "/../MODEL/m_penulis.php";
 
 $penulisModel = new Penulis();
 $aksi = $_GET['aksi'] ?? '';
 
-// TAMBAH PENULIS
+// 1. TAMBAH PENULIS
 if ($aksi === 'tambah') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: ../VIEW/ADMIN/tambahPenulis.php");
@@ -14,22 +19,23 @@ if ($aksi === 'tambah') {
     $namaPenulis = trim($_POST['nama_penulis'] ?? '');
 
     if ($namaPenulis === '') {
-        echo "Nama penulis wajib diisi.";
+        $_SESSION['error'] = "Nama penulis wajib diisi.";
+        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
         exit;
     }
 
     $penulisModel->nama_penulis = $namaPenulis;
 
     if ($penulisModel->insert()) {
-        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
-        exit;
+        $_SESSION['success'] = "Penulis berhasil ditambahkan.";
     } else {
-        echo "Gagal menambahkan penulis.";
-        exit;
+        $_SESSION['error'] = "Gagal menambahkan penulis.";
     }
+    header("Location: ../VIEW/ADMIN/daftarPenulis.php");
+    exit;
 }
 
-// EDIT PENULIS
+// 2. EDIT PENULIS (Menampilkan Form)
 elseif ($aksi === 'edit') {
     $idPenulis = (int) ($_GET['id_penulis'] ?? 0);
 
@@ -41,7 +47,8 @@ elseif ($aksi === 'edit') {
     $dataPenulis = $penulisModel->getById($idPenulis);
 
     if (!$dataPenulis) {
-        echo "Data penulis tidak ditemukan.";
+        $_SESSION['error'] = "Data penulis tidak ditemukan.";
+        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
         exit;
     }
 
@@ -49,7 +56,7 @@ elseif ($aksi === 'edit') {
     exit;
 }
 
-// UPDATE PENULIS
+// 3. UPDATE PENULIS (Memproses Form Edit)
 elseif ($aksi === 'update') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: ../VIEW/ADMIN/daftarPenulis.php");
@@ -60,7 +67,8 @@ elseif ($aksi === 'update') {
     $namaPenulis = trim($_POST['nama_penulis'] ?? '');
 
     if ($idPenulis <= 0 || $namaPenulis === '') {
-        echo "Data penulis tidak valid.";
+        $_SESSION['error'] = "Data penulis tidak valid.";
+        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
         exit;
     }
 
@@ -68,37 +76,39 @@ elseif ($aksi === 'update') {
     $penulisModel->nama_penulis = $namaPenulis;
 
     if ($penulisModel->update()) {
-        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
-        exit;
+        $_SESSION['success'] = "Data penulis berhasil diperbarui.";
     } else {
-        echo "Gagal memperbarui penulis.";
-        exit;
+        $_SESSION['error'] = "Gagal memperbarui penulis.";
     }
+    header("Location: ../VIEW/ADMIN/daftarPenulis.php");
+    exit;
 }
 
-// HAPUS PENULIS
+// 4. AKSI HAPUS PENULIS
 elseif ($aksi === 'hapus') {
-    $idPenulis = (int) ($_GET['id_penulis'] ?? 0);
+    $id_penulis = (int)($_GET['id_penulis'] ?? 0);
 
-    if ($idPenulis <= 0) {
-        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
-        exit;
-    }
-
-    if ($penulisModel->delete($idPenulis)) {
-        header("Location: ../VIEW/ADMIN/daftarPenulis.php");
-        exit;
+    if ($id_penulis > 0) {
+        // Cek terlebih dahulu apakah penulis ini digunakan oleh buku
+        if ($penulisModel->isUsedInBuku($id_penulis)) {
+            $_SESSION['error'] = "Penulis tidak dapat dihapus karena masih terhubung dengan data buku di perpustakaan!";
+        } else {
+            $hapus = $penulisModel->delete($id_penulis);
+            if ($hapus) {
+                $_SESSION['success'] = "Penulis berhasil dihapus.";
+            } else {
+                $_SESSION['error'] = "Gagal menghapus penulis.";
+            }
+        }
     } else {
-        echo "
-            <h3>Penulis tidak dapat dihapus.</h3>
-            <p>Penulis mungkin masih digunakan oleh salah satu buku.</p>
-            <a href='../VIEW/ADMIN/daftarPenulis.php'>Kembali</a>
-        ";
-        exit;
+        $_SESSION['error'] = "ID Penulis tidak valid.";
     }
+
+    header("Location: ../VIEW/ADMIN/daftarPenulis.php");
+    exit;
 }
 
-// AKSI TIDAK DIKENAL
+// 5. AKSI TIDAK DIKENAL
 else {
     header("Location: ../VIEW/ADMIN/daftarPenulis.php");
     exit;

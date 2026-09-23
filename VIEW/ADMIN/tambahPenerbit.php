@@ -3,13 +3,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Jika bukan admin, tendang kembali ke halaman terakhirnya
+// Proteksi Akses Admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
-    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    $kembali = $_SESSION['last_page_siswa'] ?? '/Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=dashboard_siswa';
     header("Location: " . $kembali);
     exit;
 }
+
+// Simpan URL lokasi controller aktif saat ini
+$_SESSION['last_page_admin'] = $_SERVER['REQUEST_URI'];
 ?>
 
 <!DOCTYPE html>

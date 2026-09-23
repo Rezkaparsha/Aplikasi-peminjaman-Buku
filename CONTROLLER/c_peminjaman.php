@@ -15,7 +15,25 @@ $aksi = $_GET['aksi'] ?? '';
 // CEK LOGIN
 
 if (!isset($_SESSION['id_user'])) {
-    header("Location: /Aplikasi Peminjaman Buku/VIEW/login.php");
+    header("Location: /Aplikasi Peminjaman Buku/VIEW/AUTH/login.php");
+    exit;
+}
+
+
+// ROUTING DASHBOARD SISWA & KATALOG (AKSES SISWA)
+
+if ($aksi === 'dashboard_siswa') {
+    require_once __DIR__ . "/../VIEW/SISWA/dashboardSiswa.php";
+    exit;
+}
+
+if ($aksi === 'katalog') {
+    require_once __DIR__ . "/../VIEW/SISWA/daftarBuku.php";
+    exit;
+}
+
+if ($aksi === 'peminjaman_siswa') {
+    require_once __DIR__ . "/../VIEW/SISWA/peminjaman.php";
     exit;
 }
 
@@ -24,7 +42,7 @@ if (!isset($_SESSION['id_user'])) {
 
 if ($aksi === 'tambah') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php");
+        header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=katalog");
         exit;
     }
 
@@ -54,7 +72,7 @@ if ($aksi === 'tambah') {
     }
 
     $_SESSION['error'] = $hasil['pesan'];
-    header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php");
+    header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=katalog");
     exit;
 }
 
@@ -65,7 +83,7 @@ if ($aksi === 'detail') {
     $id_peminjaman = (int)($_GET['id_peminjaman'] ?? 0);
 
     if ($id_peminjaman <= 0) {
-        header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/peminjaman.php");
+        header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=peminjaman_siswa");
         exit;
     }
 
@@ -73,7 +91,7 @@ if ($aksi === 'detail') {
 
     if (!$model->cekKepemilikanPeminjaman($id_peminjaman, $id_user)) {
         $_SESSION['error'] = 'Anda tidak memiliki akses ke peminjaman ini.';
-        header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/peminjaman.php");
+        header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=peminjaman_siswa");
         exit;
     }
 
@@ -88,7 +106,15 @@ if ($aksi === 'detail') {
 // SETELAH INI KHUSUS ADMIN
 
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: /Aplikasi Peminjaman Buku/VIEW/SISWA/peminjaman.php");
+    header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=dashboard_siswa");
+    exit;
+}
+
+
+// ROUTING DASHBOARD ADMIN
+
+if ($aksi === 'dashboard_admin') {
+    require_once __DIR__ . "/../VIEW/ADMIN/dashboardAdmin.php";
     exit;
 }
 
@@ -151,15 +177,16 @@ if ($aksi === 'setujui') {
 
 
 // TOLAK
-
 elseif ($aksi === 'tolak') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=admin");
         exit;
     }
-    
+
     $id_peminjaman = (int)($_POST['id_peminjaman'] ?? 0);
-    $hasil = $model->tolakPeminjaman($id_peminjaman);
+    $alasan_penolakan = trim($_POST['alasan_penolakan'] ?? '');
+
+    $hasil = $model->tolakPeminjaman($id_peminjaman, $alasan_penolakan);
 
     if ($hasil['status']) {
         $_SESSION['success'] = $hasil['pesan'];
@@ -173,7 +200,6 @@ elseif ($aksi === 'tolak') {
 
 
 // PROSES PENGEMBALIAN BUKU
-
 elseif ($aksi === 'prosesKembali') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=admin");
@@ -181,11 +207,12 @@ elseif ($aksi === 'prosesKembali') {
     }
 
     $id_peminjaman = isset($_POST['id_peminjaman']) ? (int)$_POST['id_peminjaman'] : 0;
-    $jenis_denda = $_POST['jenis_denda'] ?? null;
-    $jumlah_denda = isset($_POST['jumlah_denda']) ? (int)$_POST['jumlah_denda'] : 0;
+    
+    // Ambil array kondisi dan denda dari form yang baru
+    $kondisi_buku = $_POST['kondisi'] ?? [];
+    $denda_tambahan = $_POST['denda_tambahan'] ?? [];
 
-    // Memanggil method kembalikanBuku yang ada di M_Peminjaman
-    $hasil = $model->kembalikanBuku($id_peminjaman, $jenis_denda, $jumlah_denda);
+    $hasil = $model->kembalikanBuku($id_peminjaman, $kondisi_buku, $denda_tambahan);
 
     if ($hasil['status']) {
         $_SESSION['success'] = $hasil['pesan'];
@@ -201,7 +228,6 @@ elseif ($aksi === 'prosesKembali') {
 // HISTORI TRANSAKSI ADMIN
 
 elseif ($aksi === 'histori') {
-    // Pastikan hanya admin yang bisa mengakses
     if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         header("Location: /Aplikasi Peminjaman Buku/VIEW/AUTH/login.php");
         exit;
@@ -213,9 +239,7 @@ elseif ($aksi === 'histori') {
 }
 
 
-// DEFAULT
+// DEFAULT REDIRECT SEBAGAI ADMIN
 
-header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=admin");
+header("Location: /Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=dashboard_admin");
 exit;
-
-?>

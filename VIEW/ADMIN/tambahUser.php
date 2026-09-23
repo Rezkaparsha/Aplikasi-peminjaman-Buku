@@ -3,17 +3,20 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Jika bukan admin, tendang kembali ke halaman terakhirnya
+// Proteksi Akses Admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
-    // Cek apakah ada histori halaman sebelumnya. Jika ada, kembalikan ke sana. Jika tidak, lempar ke halaman siswa.
-    $kembali = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/Aplikasi Peminjaman Buku/VIEW/SISWA/daftarBuku.php';
+    $kembali = $_SESSION['last_page_siswa'] ?? '/Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=dashboard_siswa';
     header("Location: " . $kembali);
     exit;
 }
+
+// Simpan URL lokasi controller aktif saat ini
+$_SESSION['last_page_admin'] = $_SERVER['REQUEST_URI'];
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,6 +29,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         body {
             background-color: #f4f7f6;
             color: #333;
@@ -40,15 +44,16 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             flex-direction: column;
             overflow: hidden;
         }
-        
+
         .topbar {
             background-color: #fff;
             padding: 15px 30px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .topbar h2 {
             font-size: 20px;
             color: #2c3e50;
@@ -74,6 +79,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             padding-bottom: 12px;
             margin-bottom: 20px;
         }
+
         .card-header h3 {
             color: #2c3e50;
             font-size: 18px;
@@ -83,7 +89,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
         .form-group {
             margin-bottom: 18px;
         }
-        
+
         .form-group label {
             display: block;
             font-weight: 600;
@@ -101,7 +107,7 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             color: #2c3e50;
             transition: all 0.3s ease;
         }
-        
+
         .form-control:focus {
             border-color: #3498db;
             outline: none;
@@ -132,16 +138,23 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
             color: white;
             flex: 1;
         }
-        .btn-submit:hover { background-color: #27ae60; }
+
+        .btn-submit:hover {
+            background-color: #27ae60;
+        }
 
         .btn-cancel {
             background-color: #e74c3c;
             color: white;
             flex: 1;
         }
-        .btn-cancel:hover { background-color: #c0392b; }
+
+        .btn-cancel:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Sidebar Admin -->
@@ -162,10 +175,10 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
                 </div>
 
                 <form action="/Aplikasi Peminjaman Buku/CONTROLLER/c_user.php?aksi=tambah" method="POST">
-                    
+
                     <div class="form-group">
                         <label for="nis">NIS / NIP</label>
-                        <input type="text" id="nis" name="nis" class="form-control" placeholder="Masukkan NIS atau NIP" required>
+                        <input type="text" id="nis_nip" name="nis_nip" class="form-control" placeholder="Masukkan NIS atau NIP" required>
                     </div>
 
                     <div class="form-group">
@@ -173,6 +186,11 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
                         <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-control" placeholder="Masukkan nama lengkap" required>
                     </div>
 
+                    <div class="form-group">
+                        <label for="kelas">Kelas</label>
+                        <input type="text" id="kelas" name="kelas" class="form-control" placeholder="Contoh: XII RPL 1">
+                    </div>
+                    
                     <div class="form-group">
                         <label for="username">Username</label>
                         <input type="text" id="username" name="username" class="form-control" placeholder="Masukkan username akun" required>
@@ -203,4 +221,5 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] !== 'admin') {
     </div>
 
 </body>
+
 </html>
