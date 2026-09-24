@@ -38,24 +38,36 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         gap: 12px;
     }
 
+    /* CONTAINER LOGO BARU */
     .sidebar-siswa .brand-icon {
-        font-size: 22px;
-        background: #2563eb;
-        color: #ffffff;
-        width: 42px;
-        height: 42px;
+        width: 45px;
+        height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 10px;
+        background-color: #ffffff; /* Latar belakang putih agar logo menonjol */
+        overflow: hidden; /* Mencegah gambar keluar dari sudut border */
+        flex-shrink: 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* PENGATURAN UKURAN GAMBAR LOGO */
+    .sidebar-siswa .brand-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        padding: 2px;
     }
 
     .sidebar-siswa .brand-text h3 {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 700;
         color: #ffffff;
         margin: 0;
         line-height: 1.2;
+        white-space: nowrap;
     }
 
     .sidebar-siswa .brand-text small {
@@ -201,10 +213,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <!-- Brand / Logo Aplikasi -->
     <div class="brand-section">
         <div class="brand-icon">
-            <i class="fa-solid fa-book-bookmark"></i>
+            <img src="/Aplikasi Peminjaman Buku/ASSETS/logoApp.jpg" alt="Logo Sangkuriang">
         </div>
         <div class="brand-text">
-            <h3>E-PERPUS</h3>
+            <h3>Sangkuriang</h3>
             <small>Panel Siswa</small>
         </div>
     </div>

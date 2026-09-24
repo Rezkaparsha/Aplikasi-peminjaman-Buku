@@ -19,10 +19,10 @@ $currentPage = $_GET['aksi'] ?? basename($_SERVER['PHP_SELF']);
 
 <style>
     .sidebar {
-        width: 280px; /* Melebarkan sidebar dari 250px ke 280px agar teks tidak terpotong */
+        width: 280px; 
         min-width: 280px;
         min-height: 100vh;
-        background: #1e293b; /* Warna tema modern Slate Dark */
+        background: #1e293b; 
         color: #f8fafc;
         display: flex;
         flex-direction: column;
@@ -40,23 +40,36 @@ $currentPage = $_GET['aksi'] ?? basename($_SERVER['PHP_SELF']);
         gap: 12px;
     }
 
+    /* PERBAIKAN CONTAINER LOGO */
     .sidebar-header .brand-icon {
-        font-size: 26px;
-        background: #3b82f6;
         width: 45px;
         height: 45px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 10px;
+        background-color: #ffffff; /* Diubah menjadi putih agar logo lebih menonjol */
+        overflow: hidden; /* Mencegah gambar keluar dari border radius */
+        flex-shrink: 0; /* Mencegah ikon mengecil */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* PERBAIKAN UKURAN GAMBAR LOGO */
+    .sidebar-header .brand-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Membuat gambar proporsional memenuhi kotak */
+        object-position: center;
+        padding: 2px; /* Memberi sedikit jarak (margin dalam) agar logo tidak mentok ke garis */
     }
 
     .sidebar-header h3 {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 700;
         color: #ffffff;
         margin: 0;
         line-height: 1.2;
+        white-space: nowrap;
     }
 
     .sidebar-header small {
@@ -87,7 +100,7 @@ $currentPage = $_GET['aksi'] ?? basename($_SERVER['PHP_SELF']);
         border-radius: 8px;
         font-size: 13.5px;
         font-weight: 500;
-        white-space: nowrap; /* Mencegah teks turun baris secara tidak rapi */
+        white-space: nowrap; 
     }
 
     .sidebar-menu li a:hover {
@@ -175,9 +188,11 @@ $currentPage = $_GET['aksi'] ?? basename($_SERVER['PHP_SELF']);
 
 <div class="sidebar">
     <div class="sidebar-header">
-        <div class="brand-icon">📚</div>
+        <div class="brand-icon">
+            <img src="/Aplikasi Peminjaman Buku/ASSETS/logoApp.jpg" alt="Logo">
+        </div>
         <div>
-            <h3>PerpusApp</h3>
+            <h3>Perpustakaan</h3>
             <small>Panel Admin</small>
         </div>
     </div>
@@ -197,25 +212,25 @@ $currentPage = $_GET['aksi'] ?? basename($_SERVER['PHP_SELF']);
         </li>
         <li>
             <a href="/Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarBuku.php"
-                class="<?= ($currentPage === 'daftarBuku.php') ? 'active' : '' ?>">
+                class="<?= ($currentPage === 'daftarBuku.php' || $currentPage === 'tambahBuku.php' || $currentPage === 'editBuku.php') ? 'active' : '' ?>">
                 <span>📚</span> Kelola Buku
             </a>
         </li>
         <li>
             <a href="/Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarKategori.php"
-                class="<?= ($currentPage === 'daftarKategori.php') ? 'active' : '' ?>">
+                class="<?= ($currentPage === 'daftarKategori.php' || $currentPage === 'tambahKategori.php' || $currentPage === 'editKategori.php') ? 'active' : '' ?>">
                 <span>🏷️</span> Kategori Buku
             </a>
         </li>
         <li>
             <a href="/Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarPenerbit.php"
-                class="<?= ($currentPage === 'daftarPenerbit.php') ? 'active' : '' ?>">
+                class="<?= ($currentPage === 'daftarPenerbit.php' || $currentPage === 'tambahPenerbit.php' || $currentPage === 'editPenerbit.php') ? 'active' : '' ?>">
                 <span>🏢</span> Penerbit
             </a>
         </li>
         <li>
             <a href="/Aplikasi Peminjaman Buku/VIEW/ADMIN/daftarPenulis.php"
-                class="<?= ($currentPage === 'daftarPenulis.php') ? 'active' : '' ?>">
+                class="<?= ($currentPage === 'daftarPenulis.php' || $currentPage === 'tambahPenulis.php' || $currentPage === 'editPenulis.php') ? 'active' : '' ?>">
                 <span>✍️</span> Penulis
             </a>
         </li>

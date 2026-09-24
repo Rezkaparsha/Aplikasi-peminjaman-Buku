@@ -238,4 +238,79 @@ class Buku
 
         return $hasil;
     }
+
+    public function cariDanFilterBuku($keyword = '', $id_kategori = '', $id_penulis = '', $id_penerbit = '')
+    {
+        $sql = "
+        SELECT 
+            b.*, 
+            k.nama_kategori, 
+            p.nama_penerbit,
+            GROUP_CONCAT(pn.nama_penulis SEPARATOR ', ') as daftar_penulis
+        FROM buku b
+        LEFT JOIN kategori k ON b.id_kategori = k.id_kategori
+        LEFT JOIN penerbit p ON b.id_penerbit = p.id_penerbit
+        LEFT JOIN buku_penulis bp ON b.id_buku = bp.id_buku
+        LEFT JOIN penulis pn ON bp.id_penulis = pn.id_penulis
+        WHERE 1=1
+    ";
+
+        $params = [];
+        $types = "";
+
+        // Filter Kata Kunci (Judul Buku)
+        if (!empty($keyword)) {
+            $sql .= " AND b.judul_buku LIKE ?";
+            $params[] = "%" . $keyword . "%";
+            $types .= "s";
+        }
+
+        // Filter Kategori
+        if (!empty($id_kategori)) {
+            $sql .= " AND b.id_kategori = ?";
+            $params[] = (int)$id_kategori;
+            $types .= "i";
+        }
+
+        // Filter Penerbit
+        if (!empty($id_penerbit)) {
+            $sql .= " AND b.id_penerbit = ?";
+            $params[] = (int)$id_penerbit;
+            $types .= "i";
+        }
+
+        $sql .= " GROUP BY b.id_buku ORDER BY b.judul_buku ASC";
+
+        $stmt = $this->koneksi->prepare($sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            // Filter Penulis (karena menggunakan relasi tabel perantara/many-to-many)
+            if (!empty($id_penulis)) {
+                // Cek apakah id_penulis ini ada di buku tersebut
+                $cekPenulis = $this->koneksi->prepare("SELECT 1 FROM buku_penulis WHERE id_buku = ? AND id_penulis = ?");
+                $cekPenulis->bind_param("ii", $row['id_buku'], $id_penulis);
+                $cekPenulis->execute();
+                if ($cekPenulis->get_result()->num_rows === 0) {
+                    $cekPenulis->close();
+                    continue; // Lewati jika penulis tidak cocok
+                }
+                $cekPenulis->close();
+            }
+            $data[] = $row;
+        }
+
+        $stmt->close();
+        return $data;
+    }
 }

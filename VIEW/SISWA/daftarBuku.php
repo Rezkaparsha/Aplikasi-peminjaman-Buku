@@ -16,11 +16,30 @@ $_SESSION['last_page_siswa'] = $_SERVER['REQUEST_URI'];
 // Ambil ID User aktif
 $id_user = (int)$_SESSION['id_user'];
 
-// Menggunakan Model m_buku.php
+// Menggunakan Model
 require_once __DIR__ . "/../../MODEL/m_buku.php";
+require_once __DIR__ . "/../../MODEL/m_kategori.php";
+require_once __DIR__ . "/../../MODEL/m_penulis.php";
+require_once __DIR__ . "/../../MODEL/m_penerbit.php";
 
 $bukuModel = new Buku();
-$allBuku = $bukuModel->getAllBuku();
+$kategoriModel = new Kategori();
+$penulisModel = new Penulis();
+$penerbitModel = new Penerbit();
+
+// Ambil data untuk opsi dropdown filter
+$daftarKategori = $kategoriModel->getAll();
+$daftarPenulis  = $penulisModel->getAll();
+$daftarPenerbit = $penerbitModel->getAll();
+
+// Tangkap nilai input GET jika ada
+$keyword     = trim($_GET['keyword'] ?? '');
+$id_kategori = $_GET['id_kategori'] ?? '';
+$id_penulis  = $_GET['id_penulis'] ?? '';
+$id_penerbit = $_GET['id_penerbit'] ?? '';
+
+// Eksekusi fungsi pencarian & filter
+$allBuku = $bukuModel->cariDanFilterBuku($keyword, $id_kategori, $id_penulis, $id_penerbit);
 
 // Filter hanya buku yang memiliki stok lebih dari 0
 $daftarBuku = array_filter($allBuku, function ($buku) {
@@ -58,7 +77,7 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
     <!-- Bootstrap 5 CSS & FontAwesome -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <link rel="website icon" href="/Aplikasi Peminjaman Buku/ASSETS/logoApp.jpg">
     <style>
         /* 1. Kunci Layar Utama */
         * {
@@ -100,6 +119,16 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
+        }
+
+        /* Form Filter Styling */
+        .filter-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
         }
 
         /* Card Buku Custom Styling */
@@ -234,7 +263,7 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h3 class="fw-bold text-dark mb-1"><i class="fa-solid fa-book-open text-primary me-2"></i>Katalog Buku</h3>
-                        <p class="text-muted mb-0">Pilih buku yang ingin Anda pinjam, lalu ajukan peminjaman.</p>
+                        <p class="text-muted mb-0">Cari dan pilih buku yang ingin Anda pinjam.</p>
                     </div>
                     <a href="/Aplikasi Peminjaman Buku/VIEW/SISWA/peminjaman.php" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
                         <i class="fa-solid fa-list-check me-2"></i>Peminjaman Saya
@@ -249,6 +278,52 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
                     </div>
                     <?php unset($_SESSION['error']); ?>
                 <?php endif; ?>
+
+                <!-- FORM PENCARIAN & FILTER -->
+                <div class="filter-card">
+                    <form method="GET" action="" class="row g-3 align-items-center">
+                        <div class="col-12 col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                                <input type="text" name="keyword" class="form-control border-start-0" placeholder="Cari judul buku..." value="<?= htmlspecialchars($_GET['keyword'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <select name="id_kategori" class="form-select">
+                                <option value="">Semua Kategori</option>
+                                <?php foreach ($daftarKategori as $kat): ?>
+                                    <option value="<?= $kat['id_kategori'] ?>" <?= ($id_kategori == $kat['id_kategori']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($kat['nama_kategori']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <select name="id_penulis" class="form-select">
+                                <option value="">Semua Penulis</option>
+                                <?php foreach ($daftarPenulis as $pen): ?>
+                                    <option value="<?= $pen['id_penulis'] ?>" <?= ($id_penulis == $pen['id_penulis']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($pen['nama_penulis']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <select name="id_penerbit" class="form-select">
+                                <option value="">Semua Penerbit</option>
+                                <?php foreach ($daftarPenerbit as $penb): ?>
+                                    <option value="<?= $penb['id_penerbit'] ?>" <?= ($id_penerbit == $penb['id_penerbit']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($penb['nama_penerbit']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary w-100 fw-semibold">Filter</button>
+                            <a href="katalogBuku.php" class="btn btn-secondary text-white"><i class="fa-solid fa-rotate-right"></i></a>
+                        </div>
+                    </form>
+                </div>
 
                 <!-- FORM PENGAJUAN PEMINJAMAN -->
                 <form action="/Aplikasi Peminjaman Buku/CONTROLLER/c_peminjaman.php?aksi=tambah" method="POST" id="formPeminjaman" style="padding-bottom: 100px;">
@@ -273,8 +348,8 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
                                             <h6 class="fw-bold mb-1 text-truncate" title="<?= htmlspecialchars($buku['judul_buku']) ?>">
                                                 <?= htmlspecialchars($buku['judul_buku']) ?>
                                             </h6>
-                                            <p class="text-muted small mb-1">Penulis: <?= htmlspecialchars($buku['penulis'] ?? '-') ?></p>
-                                            <p class="text-muted small mb-2">Tahun: <?= htmlspecialchars($buku['tahun_terbit'] ?? '-') ?></p>
+                                            <p class="text-muted small mb-1">Penulis: <?= htmlspecialchars($buku['daftar_penulis'] ?? ($buku['penulis'] ?? '-')) ?></p>
+                                            <p class="text-muted small mb-2">Kategori: <?= htmlspecialchars($buku['nama_kategori'] ?? '-') ?></p>
 
                                             <div class="mt-auto border-top pt-3 d-flex justify-content-between align-items-center">
                                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
@@ -307,7 +382,8 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
                         <?php else: ?>
                             <div class="col-12 text-center py-5">
                                 <i class="fa-solid fa-box-open text-muted fa-4x mb-3 opacity-50"></i>
-                                <h5 class="text-muted fw-bold">Katalog buku sedang kosong.</h5>
+                                <h5 class="text-muted fw-bold">Tidak ada buku yang ditemukan.</h5>
+                                <p class="text-muted">Coba gunakan kata kunci atau filter lain.</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -320,19 +396,24 @@ $bukuPaginated = array_slice($daftarBuku, $offset, $limit);
                             <?php if ($total_pages > 1): ?>
                                 <ul class="pagination">
                                     <?php if ($page > 1): ?>
-                                        <li><a href="?page=<?= $page - 1 ?>">« Prev</a></li>
+                                        <li>
+                                            <!-- Bawa parameter pencarian ke halaman paginasi -->
+                                            <a href="?page=<?= $page - 1 ?>&keyword=<?= urlencode($keyword) ?>&id_kategori=<?= $id_kategori ?>&id_penulis=<?= $id_penulis ?>&id_penerbit=<?= $id_penerbit ?>">« Prev</a>
+                                        </li>
                                     <?php endif; ?>
 
                                     <?php for ($p = 1; $p <= $total_pages; $p++): ?>
                                         <li>
-                                            <a href="?page=<?= $p ?>" class="<?= ($p === $page) ? 'active' : '' ?>">
+                                            <a href="?page=<?= $p ?>&keyword=<?= urlencode($keyword) ?>&id_kategori=<?= $id_kategori ?>&id_penulis=<?= $id_penulis ?>&id_penerbit=<?= $id_penerbit ?>" class="<?= ($p === $page) ? 'active' : '' ?>">
                                                 <?= $p ?>
                                             </a>
                                         </li>
                                     <?php endfor; ?>
 
                                     <?php if ($page < $total_pages): ?>
-                                        <li><a href="?page=<?= $page + 1 ?>">Next »</a></li>
+                                        <li>
+                                            <a href="?page=<?= $page + 1 ?>&keyword=<?= urlencode($keyword) ?>&id_kategori=<?= $id_kategori ?>&id_penulis=<?= $id_penulis ?>&id_penerbit=<?= $id_penerbit ?>">Next »</a>
+                                        </li>
                                     <?php endif; ?>
                                 </ul>
                             <?php endif; ?>
